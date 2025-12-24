@@ -64,14 +64,9 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
         <Link href="/movies">
           <Button variant="outline">← 一覧に戻る</Button>
         </Link>
-        <div className="flex gap-2">
-          <Link href={`/movies/${id}/edit`}>
-            <Button variant="outline">編集</Button>
-          </Link>
-          <Link href={`/watch-logs/new?movie_id=${id}`}>
-            <Button>視聴ログを追加</Button>
-          </Link>
-        </div>
+        <Link href={`/movies/${id}/edit`}>
+          <Button variant="outline">編集</Button>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
