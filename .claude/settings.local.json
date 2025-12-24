@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run build:*)",
+      "Bash(npx shadcn@latest add:*)",
+      "Bash(grep:*)",
+      "Bash(ls:*)",
+      "Bash(find:*)"
+    ]
+  }
+}
