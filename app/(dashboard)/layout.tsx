@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { Button } from '@/components/ui/button'
+import { UserMenu } from '@/components/layout/UserMenu'
 
 export default async function DashboardLayout({
   children,
@@ -59,11 +59,10 @@ export default async function DashboardLayout({
                 </Link>
               </nav>
             </div>
-            <form action="/api/auth/signout" method="post">
-              <Button type="submit" variant="outline" size="sm">
-                ログアウト
-              </Button>
-            </form>
+            <UserMenu
+              displayName={user.user_metadata?.display_name || ''}
+              email={user.email || ''}
+            />
           </div>
         </div>
       </header>

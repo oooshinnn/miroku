@@ -2,25 +2,32 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Plus } from 'lucide-react'
 import { MovieSearchForm } from '@/components/movies/MovieSearchForm'
 import { MovieSearchResults } from '@/components/movies/MovieSearchResults'
+import { ManualMovieForm } from '@/components/movies/ManualMovieForm'
 import { useMovies } from '@/hooks/useMovies'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
 import type { TMDBMovie } from '@/lib/tmdb/types'
 
 export default function MovieSearchPage() {
   const router = useRouter()
-  const { addMovieFromTMDB } = useMovies()
+  const { addMovieFromTMDB, addMovieManually } = useMovies()
   const [searchResults, setSearchResults] = useState<TMDBMovie[]>([])
   const [searching, setSearching] = useState(false)
+  const [hasSearched, setHasSearched] = useState(false)
   const [addingMovieId, setAddingMovieId] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [showManualForm, setShowManualForm] = useState(false)
 
   const handleSearch = async (query: string) => {
     setSearching(true)
     setError(null)
     setSearchResults([])
+    setHasSearched(false)
+    setShowManualForm(false)
 
     try {
       const response = await fetch(`/api/tmdb/search?query=${encodeURIComponent(query)}`)
@@ -30,6 +37,7 @@ export default function MovieSearchPage() {
 
       const data = await response.json()
       setSearchResults(data.results || [])
+      setHasSearched(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : '検索に失敗しました')
     } finally {
@@ -52,6 +60,21 @@ export default function MovieSearchPage() {
       setError(err instanceof Error ? err.message : '映画の追加に失敗しました')
     } finally {
       setAddingMovieId(null)
+    }
+  }
+
+  const handleManualAdd = async (data: { title: string; releaseDate?: string; director?: string }) => {
+    setError(null)
+    setSuccess(false)
+
+    try {
+      await addMovieManually(data)
+      setSuccess(true)
+      setTimeout(() => {
+        router.push('/movies')
+      }, 1500)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '映画の追加に失敗しました')
     }
   }
 
@@ -80,12 +103,51 @@ export default function MovieSearchPage() {
 
       {searchResults.length > 0 && (
         <div>
-          <h2 className="text-xl font-semibold mb-4">検索結果</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">検索結果</h2>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowManualForm(true)}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              手動で追加
+            </Button>
+          </div>
           <MovieSearchResults
             results={searchResults}
             onSelect={handleSelectMovie}
             addingMovieId={addingMovieId}
           />
+        </div>
+      )}
+
+      {hasSearched && searchResults.length === 0 && !showManualForm && (
+        <div className="text-center py-8 space-y-4">
+          <p className="text-slate-600">検索結果がありません</p>
+          <Button onClick={() => setShowManualForm(true)}>
+            <Plus className="h-4 w-4 mr-1" />
+            映画を手動で追加
+          </Button>
+        </div>
+      )}
+
+      {showManualForm && (
+        <ManualMovieForm
+          onSubmit={handleManualAdd}
+          onCancel={() => setShowManualForm(false)}
+        />
+      )}
+
+      {!hasSearched && !showManualForm && (
+        <div className="text-center py-8">
+          <p className="text-slate-500 mb-4">
+            または、検索せずに手動で追加することもできます
+          </p>
+          <Button variant="outline" onClick={() => setShowManualForm(true)}>
+            <Plus className="h-4 w-4 mr-1" />
+            手動で追加
+          </Button>
         </div>
       )}
     </div>

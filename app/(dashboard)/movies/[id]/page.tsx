@@ -3,10 +3,9 @@ import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { MovieDetailClient } from './MovieDetailClient'
 import { MovieTagSelector } from '@/components/movies/MovieTagSelector'
-import { WatchCountEditor } from '@/components/movies/WatchCountEditor'
 
 interface MovieDetailPageProps {
   params: Promise<{ id: string }>
@@ -104,10 +103,7 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
                 <span>{productionCountries.join(', ')}</span>
               )}
             </div>
-            <div className="space-y-3">
-              <WatchCountEditor movieId={id} initialCount={movie.watch_count} />
-              <MovieTagSelector movieId={id} />
-            </div>
+            <MovieTagSelector movieId={id} />
           </div>
 
           {/* スタッフ・キャスト */}
@@ -154,7 +150,7 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
       </div>
 
       {/* 視聴ログセクション */}
-      <MovieDetailClient movieId={id} />
+      <MovieDetailClient movieId={id} initialWatchCount={movie.watch_count} />
     </div>
   )
 }

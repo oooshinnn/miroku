@@ -227,10 +227,95 @@ export function useMovies() {
     }
   }
 
+  interface ManualMovieData {
+    title: string
+    releaseDate?: string
+    posterUrl?: string
+    productionCountries?: string[]
+    director?: string
+  }
+
+  const addMovieManually = async (data: ManualMovieData) => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      throw new Error('ユーザーがログインしていません')
+    }
+
+    // 映画を挿入（カスタムデータとして保存）
+    const movieData: MovieInsert = {
+      user_id: user.id,
+      custom_title: data.title,
+      custom_release_date: data.releaseDate || null,
+      custom_poster_url: data.posterUrl || null,
+      custom_production_countries: data.productionCountries || null,
+    }
+
+    const { data: newMovie, error: movieError } = (await supabase
+      .from('movies')
+      .insert(movieData as any)
+      .select()
+      .single()) as { data: Movie | null; error: any }
+
+    if (movieError || !newMovie) {
+      throw movieError || new Error('映画の作成に失敗しました')
+    }
+
+    // 監督を保存（入力があれば）
+    if (data.director?.trim()) {
+      const directorName = data.director.trim()
+
+      // 既存の人物を検索
+      const { data: existingPerson } = await supabase
+        .from('persons')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('display_name', directorName)
+        .is('merged_into_id', null)
+        .maybeSingle() as { data: Person | null }
+
+      let personId: string
+
+      if (existingPerson) {
+        personId = existingPerson.id
+      } else {
+        const personData: PersonInsert = {
+          user_id: user.id,
+          display_name: directorName,
+        }
+
+        const { data: newPerson, error: personError } = (await supabase
+          .from('persons')
+          .insert(personData as any)
+          .select()
+          .single()) as { data: Person | null; error: any }
+
+        if (personError || !newPerson) {
+          throw personError || new Error('監督の作成に失敗しました')
+        }
+        personId = newPerson.id
+      }
+
+      const moviePersonData: MoviePersonInsert = {
+        movie_id: newMovie.id,
+        person_id: personId,
+        role: 'director',
+      }
+
+      await supabase.from('movie_persons').insert(moviePersonData as any)
+    }
+
+    await fetchMovies()
+    return newMovie
+  }
+
   return {
     movies,
     loading,
     addMovieFromTMDB,
+    addMovieManually,
     getMovieTags,
     addTagToMovie,
     removeTagFromMovie,

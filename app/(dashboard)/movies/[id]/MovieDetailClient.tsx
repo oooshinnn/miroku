@@ -6,14 +6,16 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { InlineWatchLogForm } from '@/components/watch-logs/InlineWatchLogForm'
 import { InlineWatchLogItem } from '@/components/watch-logs/InlineWatchLogItem'
+import { WatchCountEditor } from '@/components/movies/WatchCountEditor'
 import { useWatchLogs } from '@/hooks/useWatchLogs'
 import type { WatchLogFormData } from '@/lib/validations/watch-log'
 
 interface MovieDetailClientProps {
   movieId: string
+  initialWatchCount: number
 }
 
-export function MovieDetailClient({ movieId }: MovieDetailClientProps) {
+export function MovieDetailClient({ movieId, initialWatchCount }: MovieDetailClientProps) {
   const [isAdding, setIsAdding] = useState(false)
   const { watchLogs, loading, addWatchLog, updateWatchLog, deleteWatchLog } = useWatchLogs(movieId)
 
@@ -45,7 +47,10 @@ export function MovieDetailClient({ movieId }: MovieDetailClientProps) {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <CardTitle>視聴ログ</CardTitle>
+          <div className="flex items-center gap-3">
+            <CardTitle>視聴ログ</CardTitle>
+            <WatchCountEditor movieId={movieId} initialCount={initialWatchCount} />
+          </div>
           <CardDescription>この映画の視聴記録</CardDescription>
         </div>
         {!isAdding && (

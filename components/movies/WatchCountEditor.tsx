@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { Minus, Plus } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
 
 interface WatchCountEditorProps {
@@ -32,47 +31,29 @@ export function WatchCountEditor({ movieId, initialCount }: WatchCountEditorProp
       setCount(newCount)
     } catch (error) {
       console.error('視聴回数の更新に失敗しました:', error)
-      alert('視聴回数の更新に失敗しました')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleDecrement = () => {
-    if (count > 0) {
-      updateCount(count - 1)
-    }
-  }
-
-  const handleIncrement = () => {
-    updateCount(count + 1)
-  }
-
   return (
-    <div className="flex items-center gap-3">
-      <span className="text-sm text-slate-600">視聴回数:</span>
-      <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="icon"
-          className="h-8 w-8"
-          onClick={handleDecrement}
-          disabled={loading || count === 0}
-        >
-          <Minus className="h-4 w-4" />
-        </Button>
-        <span className="w-8 text-center font-medium text-lg">{count}</span>
-        <Button
-          variant="outline"
-          size="icon"
-          className="h-8 w-8"
-          onClick={handleIncrement}
-          disabled={loading}
-        >
-          <Plus className="h-4 w-4" />
-        </Button>
-      </div>
-      <span className="text-sm text-slate-500">回</span>
+    <div className="flex items-center gap-1 text-sm">
+      <button
+        onClick={() => count > 0 && updateCount(count - 1)}
+        disabled={loading || count === 0}
+        className="p-1 rounded hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed"
+      >
+        <Minus className="h-3 w-3" />
+      </button>
+      <span className="w-5 text-center font-medium">{count}</span>
+      <button
+        onClick={() => updateCount(count + 1)}
+        disabled={loading}
+        className="p-1 rounded hover:bg-slate-100 disabled:opacity-30"
+      >
+        <Plus className="h-3 w-3" />
+      </button>
+      <span className="text-slate-500 ml-0.5">回</span>
     </div>
   )
 }

@@ -10,9 +10,15 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { TagBadge } from '@/components/tags/TagBadge'
 import { useTags } from '@/hooks/useTags'
-import type { MovieFilters } from '@/hooks/useMovieFilter'
+import type { MovieFilters, SortBy } from '@/hooks/useMovieFilter'
 import type { Tag } from '@/types/tag'
 import type { Person } from '@/types/movie'
+
+const SORT_OPTIONS: { value: SortBy; label: string }[] = [
+  { value: 'watched_at', label: '視聴日順' },
+  { value: 'release_date', label: '公開日順' },
+  { value: 'created_at', label: '登録日順' },
+]
 
 interface MovieFilterProps {
   filters: MovieFilters
@@ -183,6 +189,22 @@ export function MovieFilter({
                 {years.map((year) => (
                   <option key={year} value={year}>
                     {year}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* 並び替え */}
+            <div className="flex items-center gap-1 ml-auto">
+              <span className="text-sm text-slate-500">並び替え:</span>
+              <select
+                value={filters.sortBy}
+                onChange={(e) => onFiltersChange({ sortBy: e.target.value as SortBy })}
+                className="h-8 px-2 text-sm border rounded-md bg-white"
+              >
+                {SORT_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
                   </option>
                 ))}
               </select>

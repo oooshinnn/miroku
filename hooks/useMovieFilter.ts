@@ -5,12 +5,15 @@ import { createClient } from '@/lib/supabase/client'
 import type { Movie } from '@/types/movie'
 import type { Tag } from '@/types/tag'
 
+export type SortBy = 'watched_at' | 'release_date' | 'created_at'
+
 export interface MovieFilters {
   title: string
   tagIds: string[]
   personId: string | null
   yearFrom: number | null
   yearTo: number | null
+  sortBy: SortBy
 }
 
 const defaultFilters: MovieFilters = {
@@ -19,6 +22,7 @@ const defaultFilters: MovieFilters = {
   personId: null,
   yearFrom: null,
   yearTo: null,
+  sortBy: 'watched_at',
 }
 
 export function useMovieFilter() {
@@ -89,6 +93,49 @@ export function useMovieFilter() {
           filteredMovies = filteredMovies.filter(m => movieIdsWithPerson.has(m.id))
         }
       }
+
+      // Sort movies
+      if (filters.sortBy === 'watched_at') {
+        // Fetch latest watch_log for each movie
+        const movieIds = filteredMovies.map(m => m.id)
+        if (movieIds.length > 0) {
+          const { data: watchLogs } = (await supabase
+            .from('watch_logs')
+            .select('movie_id, watched_at')
+            .in('movie_id', movieIds)
+            .order('watched_at', { ascending: false })) as { data: { movie_id: string; watched_at: string }[] | null }
+
+          // Get latest watched_at per movie
+          const latestWatchedMap = new Map<string, string>()
+          if (watchLogs) {
+            for (const log of watchLogs) {
+              if (!latestWatchedMap.has(log.movie_id)) {
+                latestWatchedMap.set(log.movie_id, log.watched_at)
+              }
+            }
+          }
+
+          // Sort: movies with watch logs first (by date desc), then movies without
+          filteredMovies.sort((a, b) => {
+            const aDate = latestWatchedMap.get(a.id)
+            const bDate = latestWatchedMap.get(b.id)
+            if (!aDate && !bDate) return 0
+            if (!aDate) return 1
+            if (!bDate) return -1
+            return new Date(bDate).getTime() - new Date(aDate).getTime()
+          })
+        }
+      } else if (filters.sortBy === 'release_date') {
+        filteredMovies.sort((a, b) => {
+          const aDate = a.custom_release_date || a.tmdb_release_date
+          const bDate = b.custom_release_date || b.tmdb_release_date
+          if (!aDate && !bDate) return 0
+          if (!aDate) return 1
+          if (!bDate) return -1
+          return new Date(bDate).getTime() - new Date(aDate).getTime()
+        })
+      }
+      // 'created_at' is already sorted by the query
 
       setMovies(filteredMovies)
     } catch (error) {

@@ -2,7 +2,6 @@
 
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import type { TMDBMovie } from '@/lib/tmdb/types'
 
 interface MovieSearchResultsProps {
@@ -23,10 +22,10 @@ export function MovieSearchResults({ results, onSelect, addingMovieId }: MovieSe
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
       {results.map((movie) => (
-        <Card key={movie.id} className="overflow-hidden">
-          <div className="relative h-48 bg-slate-200">
+        <div key={movie.id} className="space-y-2">
+          <div className="relative aspect-[2/3] bg-slate-200 rounded-lg overflow-hidden">
             {movie.poster_path ? (
               <Image
                 src={`${IMAGE_BASE_URL}${movie.poster_path}`}
@@ -37,27 +36,28 @@ export function MovieSearchResults({ results, onSelect, addingMovieId }: MovieSe
                 priority={false}
               />
             ) : (
-              <div className="flex items-center justify-center h-full text-slate-400">
+              <div className="flex items-center justify-center h-full text-slate-400 text-sm">
                 画像なし
               </div>
             )}
           </div>
-          <CardHeader>
-            <CardTitle className="text-lg line-clamp-2">{movie.title}</CardTitle>
-            <CardDescription>
+          <div className="px-1">
+            <h3 className="font-medium text-slate-900 line-clamp-2 text-sm leading-tight">
+              {movie.title}
+            </h3>
+            <p className="text-xs text-slate-500 mt-1">
               {movie.release_date ? new Date(movie.release_date).getFullYear() : '年不明'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button
-              onClick={() => onSelect(movie)}
-              disabled={addingMovieId === movie.id}
-              className="w-full"
-            >
-              {addingMovieId === movie.id ? '追加中...' : '追加'}
-            </Button>
-          </CardContent>
-        </Card>
+            </p>
+          </div>
+          <Button
+            onClick={() => onSelect(movie)}
+            disabled={addingMovieId === movie.id}
+            size="sm"
+            className="w-full"
+          >
+            {addingMovieId === movie.id ? '追加中...' : '追加'}
+          </Button>
+        </div>
       ))}
     </div>
   )

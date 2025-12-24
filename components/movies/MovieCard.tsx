@@ -2,7 +2,6 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import type { Movie } from '@/types/movie'
 
 interface MovieCardProps {
@@ -16,32 +15,42 @@ export function MovieCard({ movie }: MovieCardProps) {
   const releaseDate = movie.custom_release_date || movie.tmdb_release_date
 
   return (
-    <Link href={`/movies/${movie.id}`}>
-      <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer">
-        <div className="relative h-48 bg-slate-200">
-          {posterPath ? (
-            <Image
-              src={posterPath}
-              alt={title}
-              fill
-              className="object-cover"
-              unoptimized
-              priority={false}
-            />
-          ) : (
-            <div className="flex items-center justify-center h-full text-slate-400">
-              画像なし
-            </div>
-          )}
-        </div>
-        <CardHeader>
-          <CardTitle className="text-lg line-clamp-2">{title}</CardTitle>
-          <CardDescription>
-            {releaseDate ? new Date(releaseDate).getFullYear() : '年不明'}
-            {movie.watch_count > 0 && ` • ${movie.watch_count}回視聴`}
-          </CardDescription>
-        </CardHeader>
-      </Card>
+    <Link
+      href={`/movies/${movie.id}`}
+      className="group grid grid-rows-subgrid row-span-3 gap-0"
+    >
+      {/* ポスター画像（2:3比率） */}
+      <div className="relative aspect-[2/3] bg-slate-200 rounded-t-lg overflow-hidden">
+        {posterPath ? (
+          <Image
+            src={posterPath}
+            alt={title}
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-200"
+            unoptimized
+            priority={false}
+          />
+        ) : (
+          <div className="flex items-center justify-center h-full text-slate-400 text-sm">
+            画像なし
+          </div>
+        )}
+      </div>
+
+      {/* タイトル */}
+      <div className="px-2 pt-2">
+        <h3 className="font-medium text-slate-900 line-clamp-2 text-sm leading-tight group-hover:text-blue-600 transition-colors">
+          {title}
+        </h3>
+      </div>
+
+      {/* メタ情報 */}
+      <div className="px-2 pb-2 pt-1">
+        <p className="text-xs text-slate-500">
+          {releaseDate ? new Date(releaseDate).getFullYear() : '年不明'}
+          {movie.watch_count > 0 && ` • ${movie.watch_count}回`}
+        </p>
+      </div>
     </Link>
   )
 }
