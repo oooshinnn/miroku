@@ -64,6 +64,7 @@ export interface Database {
           id: string
           user_id: string
           tmdb_person_id: number | null
+          tmdb_profile_path: string | null
           display_name: string
           merged_into_id: string | null
           created_at: string
@@ -73,6 +74,7 @@ export interface Database {
           id?: string
           user_id: string
           tmdb_person_id?: number | null
+          tmdb_profile_path?: string | null
           display_name: string
           merged_into_id?: string | null
           created_at?: string
@@ -82,6 +84,7 @@ export interface Database {
           id?: string
           user_id?: string
           tmdb_person_id?: number | null
+          tmdb_profile_path?: string | null
           display_name?: string
           merged_into_id?: string | null
           created_at?: string

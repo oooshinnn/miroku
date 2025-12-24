@@ -1,6 +1,7 @@
 'use client'
 
 import Image from 'next/image'
+import { Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { TMDBMovie } from '@/lib/tmdb/types'
 
@@ -8,9 +9,10 @@ interface MovieSearchResultsProps {
   results: TMDBMovie[]
   onSelect: (movie: TMDBMovie) => void
   addingMovieId: number | null
+  addedTmdbIds: Set<number>
 }
 
-export function MovieSearchResults({ results, onSelect, addingMovieId }: MovieSearchResultsProps) {
+export function MovieSearchResults({ results, onSelect, addingMovieId, addedTmdbIds }: MovieSearchResultsProps) {
   const IMAGE_BASE_URL = process.env.NEXT_PUBLIC_TMDB_IMAGE_BASE_URL || 'https://image.tmdb.org/t/p/w500'
 
   if (results.length === 0) {
@@ -49,14 +51,26 @@ export function MovieSearchResults({ results, onSelect, addingMovieId }: MovieSe
               {movie.release_date ? new Date(movie.release_date).getFullYear() : '年不明'}
             </p>
           </div>
-          <Button
-            onClick={() => onSelect(movie)}
-            disabled={addingMovieId === movie.id}
-            size="sm"
-            className="w-full"
-          >
-            {addingMovieId === movie.id ? '追加中...' : '追加'}
-          </Button>
+          {addedTmdbIds.has(movie.id) ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              disabled
+            >
+              <Check className="h-4 w-4 mr-1" />
+              追加済み
+            </Button>
+          ) : (
+            <Button
+              onClick={() => onSelect(movie)}
+              disabled={addingMovieId === movie.id}
+              size="sm"
+              className="w-full"
+            >
+              {addingMovieId === movie.id ? '追加中...' : '追加'}
+            </Button>
+          )}
         </div>
       ))}
     </div>

@@ -1,13 +1,16 @@
 'use client'
 
 import { useState } from 'react'
-import { Search, Edit2, GitMerge, Check, X } from 'lucide-react'
+import Image from 'next/image'
+import { Search, Edit2, GitMerge, Check, X, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { usePersons, type PersonWithStats } from '@/hooks/usePersons'
+
+const IMAGE_BASE_URL = process.env.NEXT_PUBLIC_TMDB_IMAGE_BASE_URL || 'https://image.tmdb.org/t/p/w500'
 
 const roleLabels: Record<string, string> = {
   director: '監督',
@@ -126,6 +129,23 @@ export default function PersonsPage() {
               <CardContent className="py-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4 flex-1">
+                    {/* 顔写真 */}
+                    <div className="relative w-12 h-12 rounded-full overflow-hidden bg-slate-200 flex-shrink-0">
+                      {person.tmdb_profile_path ? (
+                        <Image
+                          src={`${IMAGE_BASE_URL}${person.tmdb_profile_path}`}
+                          alt={person.display_name}
+                          fill
+                          className="object-cover"
+                          unoptimized
+                        />
+                      ) : (
+                        <div className="flex items-center justify-center h-full text-slate-400">
+                          <User className="h-6 w-6" />
+                        </div>
+                      )}
+                    </div>
+
                     {editingId === person.id ? (
                       <div className="flex items-center gap-2 flex-1">
                         <Input

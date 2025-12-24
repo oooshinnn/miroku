@@ -13,13 +13,12 @@ import type { TMDBMovie } from '@/lib/tmdb/types'
 
 export default function MovieSearchPage() {
   const router = useRouter()
-  const { addMovieFromTMDB, addMovieManually } = useMovies()
+  const { addMovieQuick, addMovieManually, getAddedTmdbIds } = useMovies()
   const [searchResults, setSearchResults] = useState<TMDBMovie[]>([])
   const [searching, setSearching] = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
   const [addingMovieId, setAddingMovieId] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
   const [showManualForm, setShowManualForm] = useState(false)
 
   const handleSearch = async (query: string) => {
@@ -48,31 +47,23 @@ export default function MovieSearchPage() {
   const handleSelectMovie = async (movie: TMDBMovie) => {
     setAddingMovieId(movie.id)
     setError(null)
-    setSuccess(false)
 
     try {
-      await addMovieFromTMDB(movie)
-      setSuccess(true)
-      setTimeout(() => {
-        router.push('/movies')
-      }, 1500)
+      // 基本情報のみ保存して即座に遷移（クレジットは詳細ページで取得）
+      const newMovie = await addMovieQuick(movie)
+      router.push(`/movies/${newMovie.id}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : '映画の追加に失敗しました')
-    } finally {
       setAddingMovieId(null)
     }
   }
 
   const handleManualAdd = async (data: { title: string; releaseDate?: string; director?: string }) => {
     setError(null)
-    setSuccess(false)
 
     try {
-      await addMovieManually(data)
-      setSuccess(true)
-      setTimeout(() => {
-        router.push('/movies')
-      }, 1500)
+      const newMovie = await addMovieManually(data)
+      router.push(`/movies/${newMovie.id}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : '映画の追加に失敗しました')
     }
@@ -95,12 +86,6 @@ export default function MovieSearchPage() {
         </Alert>
       )}
 
-      {success && (
-        <Alert>
-          <AlertDescription>映画を追加しました。映画一覧に移動します...</AlertDescription>
-        </Alert>
-      )}
-
       {searchResults.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-4">
@@ -118,6 +103,7 @@ export default function MovieSearchPage() {
             results={searchResults}
             onSelect={handleSelectMovie}
             addingMovieId={addingMovieId}
+            addedTmdbIds={getAddedTmdbIds()}
           />
         </div>
       )}

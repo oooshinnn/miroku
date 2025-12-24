@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { YearlyWatchChart } from '@/components/analytics/YearlyWatchChart'
+import { MonthlyWatchChart } from '@/components/analytics/MonthlyWatchChart'
 import { DirectorChart } from '@/components/analytics/DirectorChart'
 import { CastChart } from '@/components/analytics/CastChart'
 
-interface YearlyData {
-  year: string
+interface MonthlyData {
+  month: string
   count: number
 }
 
@@ -17,7 +17,7 @@ interface PersonData {
 }
 
 export default function AnalyticsPage() {
-  const [yearlyData, setYearlyData] = useState<YearlyData[]>([])
+  const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([])
   const [directorData, setDirectorData] = useState<PersonData[]>([])
   const [castData, setCastData] = useState<PersonData[]>([])
   const [loading, setLoading] = useState(true)
@@ -34,32 +34,33 @@ export default function AnalyticsPage() {
 
         if (!user) return
 
-        // 年別視聴本数を取得
+        // 月別視聴本数を取得
         const { data: watchLogs } = (await supabase
           .from('watch_logs')
           .select('watched_at, movie_id')
           .eq('user_id', user.id)) as { data: any[] | null }
 
         if (watchLogs) {
-          // 年ごとにユニークな映画IDをカウント
-          const yearlyMap = new Map<string, Set<string>>()
+          // 月ごとにユニークな映画IDをカウント
+          const monthlyMap = new Map<string, Set<string>>()
 
           watchLogs.forEach((log) => {
-            const year = new Date(log.watched_at).getFullYear().toString()
-            if (!yearlyMap.has(year)) {
-              yearlyMap.set(year, new Set())
+            const date = new Date(log.watched_at)
+            const month = `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}`
+            if (!monthlyMap.has(month)) {
+              monthlyMap.set(month, new Set())
             }
-            yearlyMap.get(year)!.add(log.movie_id)
+            monthlyMap.get(month)!.add(log.movie_id)
           })
 
-          const yearly = Array.from(yearlyMap.entries())
-            .map(([year, movieIds]) => ({
-              year,
+          const monthly = Array.from(monthlyMap.entries())
+            .map(([month, movieIds]) => ({
+              month,
               count: movieIds.size,
             }))
-            .sort((a, b) => a.year.localeCompare(b.year))
+            .sort((a, b) => a.month.localeCompare(b.month))
 
-          setYearlyData(yearly)
+          setMonthlyData(monthly)
         }
 
         // 監督・キャスト別視聴作品数を取得
@@ -145,7 +146,7 @@ export default function AnalyticsPage() {
       </div>
 
       <div className="space-y-6">
-        <YearlyWatchChart data={yearlyData} />
+        <MonthlyWatchChart data={monthlyData} />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <DirectorChart data={directorData} />
           <CastChart data={castData} />

@@ -21,10 +21,10 @@ export async function GET(
       getMovieCredits(movieId),
     ])
 
-    // 監督、脚本家、主要キャスト（上位20名）の人物IDを収集
+    // 監督、脚本家、主演（上位3名）の人物IDを収集
     const directors = credits.crew.filter(c => c.job === 'Director')
     const writers = credits.crew.filter(c => c.job === 'Writer' || c.job === 'Screenplay').slice(0, 5)
-    const topCast = credits.cast.slice(0, 20)
+    const topCast = credits.cast.slice(0, 3)
 
     const personIds = [
       ...directors.map(d => d.id),

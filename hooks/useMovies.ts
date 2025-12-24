@@ -28,7 +28,8 @@ export function useMovies() {
     fetchMovies()
   }, [])
 
-  const addMovieFromTMDB = async (tmdbMovie: TMDBMovie) => {
+  // 高速追加: 基本情報のみでDBに保存（API呼び出しなし）
+  const addMovieQuick = async (tmdbMovie: TMDBMovie): Promise<Movie> => {
     const {
       data: { user },
     } = await supabase.auth.getUser()
@@ -37,22 +38,13 @@ export function useMovies() {
       throw new Error('ユーザーがログインしていません')
     }
 
-    // 映画詳細とクレジット情報を取得
-    const response = await fetch(`/api/tmdb/movie/${tmdbMovie.id}`)
-    if (!response.ok) {
-      throw new Error('映画詳細の取得に失敗しました')
-    }
-
-    const { details, credits }: { details: TMDBMovieDetails; credits: TMDBCredits } = await response.json()
-
-    // 映画を挿入
+    // 検索結果の基本情報だけで映画を挿入
     const movieData: MovieInsert = {
       user_id: user.id,
-      tmdb_movie_id: details.id,
-      tmdb_title: details.title,
-      tmdb_poster_path: details.poster_path,
-      tmdb_release_date: details.release_date || null,
-      tmdb_production_countries: details.production_countries.map(c => c.name),
+      tmdb_movie_id: tmdbMovie.id,
+      tmdb_title: tmdbMovie.title,
+      tmdb_poster_path: tmdbMovie.poster_path,
+      tmdb_release_date: tmdbMovie.release_date || null,
     }
 
     const { data: newMovie, error: movieError } = (await supabase
@@ -65,12 +57,48 @@ export function useMovies() {
       throw movieError || new Error('Failed to create movie')
     }
 
+    await fetchMovies()
+    return newMovie
+  }
+
+  // クレジット情報を後から取得・保存
+  const fetchAndSaveCredits = async (movieId: string, tmdbMovieId: number): Promise<void> => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) return
+
+    // 既にクレジット情報があるか確認
+    const { data: existingPersons } = await supabase
+      .from('movie_persons')
+      .select('id')
+      .eq('movie_id', movieId)
+      .limit(1)
+
+    if (existingPersons && existingPersons.length > 0) {
+      return // 既にクレジット情報がある
+    }
+
+    // TMDB APIから詳細とクレジット情報を取得
+    const response = await fetch(`/api/tmdb/movie/${tmdbMovieId}`)
+    if (!response.ok) return
+
+    const { details, credits }: { details: TMDBMovieDetails; credits: TMDBCredits } = await response.json()
+
+    // 製作国を更新
+    if (details.production_countries?.length > 0) {
+      await supabase
+        .from('movies')
+        .update({ tmdb_production_countries: details.production_countries.map(c => c.name) } as any)
+        .eq('id', movieId)
+    }
+
     // 監督を保存
     const directors = credits.crew.filter(c => c.job === 'Director')
     for (const director of directors) {
       const displayName = director.display_name || director.name
 
-      // 同じTMDB IDの人物を検索
       const { data: person } = await supabase
         .from('persons')
         .select('*')
@@ -82,10 +110,18 @@ export function useMovies() {
 
       if (person) {
         personId = person.id
+        // 既存の人物にprofile_pathがなければ更新
+        if (!person.tmdb_profile_path && director.profile_path) {
+          await supabase
+            .from('persons')
+            .update({ tmdb_profile_path: director.profile_path } as any)
+            .eq('id', person.id)
+        }
       } else {
         const personData: PersonInsert = {
           user_id: user.id,
           tmdb_person_id: director.id,
+          tmdb_profile_path: director.profile_path,
           display_name: displayName,
         }
 
@@ -100,7 +136,7 @@ export function useMovies() {
       }
 
       const moviePersonData: MoviePersonInsert = {
-        movie_id: newMovie.id,
+        movie_id: movieId,
         person_id: personId,
         role: 'director',
       }
@@ -124,10 +160,18 @@ export function useMovies() {
 
       if (person) {
         personId = person.id
+        // 既存の人物にprofile_pathがなければ更新
+        if (!person.tmdb_profile_path && writer.profile_path) {
+          await supabase
+            .from('persons')
+            .update({ tmdb_profile_path: writer.profile_path } as any)
+            .eq('id', person.id)
+        }
       } else {
         const personData: PersonInsert = {
           user_id: user.id,
           tmdb_person_id: writer.id,
+          tmdb_profile_path: writer.profile_path,
           display_name: displayName,
         }
 
@@ -142,7 +186,7 @@ export function useMovies() {
       }
 
       const moviePersonData: MoviePersonInsert = {
-        movie_id: newMovie.id,
+        movie_id: movieId,
         person_id: personId,
         role: 'writer',
       }
@@ -150,8 +194,8 @@ export function useMovies() {
       await supabase.from('movie_persons').insert(moviePersonData as any)
     }
 
-    // キャストを保存（上位20名）
-    for (const cast of credits.cast.slice(0, 20)) {
+    // 主演を保存（上位3名）
+    for (const cast of credits.cast.slice(0, 3)) {
       const displayName = cast.display_name || cast.name
 
       const { data: person } = await supabase
@@ -165,10 +209,18 @@ export function useMovies() {
 
       if (person) {
         personId = person.id
+        // 既存の人物にprofile_pathがなければ更新
+        if (!person.tmdb_profile_path && cast.profile_path) {
+          await supabase
+            .from('persons')
+            .update({ tmdb_profile_path: cast.profile_path } as any)
+            .eq('id', person.id)
+        }
       } else {
         const personData: PersonInsert = {
           user_id: user.id,
           tmdb_person_id: cast.id,
+          tmdb_profile_path: cast.profile_path,
           display_name: displayName,
         }
 
@@ -183,7 +235,7 @@ export function useMovies() {
       }
 
       const moviePersonData: MoviePersonInsert = {
-        movie_id: newMovie.id,
+        movie_id: movieId,
         person_id: personId,
         role: 'cast',
         cast_order: cast.order,
@@ -191,9 +243,13 @@ export function useMovies() {
 
       await supabase.from('movie_persons').insert(moviePersonData as any)
     }
+  }
 
-    await fetchMovies()
-    return newMovie
+  // 従来の追加関数（互換性のために残す）
+  const addMovieFromTMDB = async (tmdbMovie: TMDBMovie) => {
+    const movie = await addMovieQuick(tmdbMovie)
+    await fetchAndSaveCredits(movie.id, tmdbMovie.id)
+    return movie
   }
 
   const getMovieTags = async (movieId: string): Promise<Tag[]> => {
@@ -315,14 +371,28 @@ export function useMovies() {
     return newMovie
   }
 
+  // 追加済みのTMDB映画IDセットを取得
+  const getAddedTmdbIds = (): Set<number> => {
+    const ids = new Set<number>()
+    movies.forEach((movie) => {
+      if (movie.tmdb_movie_id) {
+        ids.add(movie.tmdb_movie_id)
+      }
+    })
+    return ids
+  }
+
   return {
     movies,
     loading,
     addMovieFromTMDB,
+    addMovieQuick,
+    fetchAndSaveCredits,
     addMovieManually,
     getMovieTags,
     addTagToMovie,
     removeTagFromMovie,
+    getAddedTmdbIds,
     refetch: fetchMovies,
   }
 }

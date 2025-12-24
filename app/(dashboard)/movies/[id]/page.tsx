@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { MovieDetailClient } from './MovieDetailClient'
 import { MovieActions } from './MovieActions'
+import { CreditsFetcher } from './CreditsFetcher'
 import { MovieTagSelector } from '@/components/movies/MovieTagSelector'
 import { EditablePersonList } from '@/components/movies/EditablePersonList'
 
@@ -75,6 +76,9 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
       tmdbPersonId: mp.person.tmdb_person_id,
       castOrder: mp.cast_order,
     })) || []
+
+  // クレジット情報がまだ取得されていないか判定
+  const hasNoCredits = movie.tmdb_movie_id && (movie.movie_persons?.length || 0) === 0
 
   // MovieActions用のデータ（比較用）
   const currentDataForRefresh = {
@@ -156,6 +160,11 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
 
           {/* スタッフ・キャスト */}
           <div className="space-y-4">
+            {/* クレジット情報がない場合はバックグラウンドで取得 */}
+            {hasNoCredits && (
+              <CreditsFetcher movieId={id} tmdbMovieId={movie.tmdb_movie_id} />
+            )}
+
             {directors.length > 0 && (
               <Card>
                 <CardHeader>

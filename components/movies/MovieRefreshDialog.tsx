@@ -80,7 +80,7 @@ export function MovieRefreshDialog({ movieId, tmdbMovieId, currentData, onRefres
           displayName: w.display_name || w.name,
         }))
 
-      const cast = credits.cast.slice(0, 20).map(c => ({
+      const cast = credits.cast.slice(0, 3).map(c => ({
         id: c.id,
         name: c.name,
         displayName: c.display_name || c.name,
