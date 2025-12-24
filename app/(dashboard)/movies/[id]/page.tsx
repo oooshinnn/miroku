@@ -5,7 +5,9 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { MovieDetailClient } from './MovieDetailClient'
+import { MovieActions } from './MovieActions'
 import { MovieTagSelector } from '@/components/movies/MovieTagSelector'
+import { EditablePersonList } from '@/components/movies/EditablePersonList'
 
 interface MovieDetailPageProps {
   params: Promise<{ id: string }>
@@ -26,7 +28,8 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
         cast_order,
         person:persons(
           id,
-          display_name
+          display_name,
+          tmdb_person_id
         )
       )
     `)
@@ -43,19 +46,62 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
   const releaseDate = movie.custom_release_date || movie.tmdb_release_date
   const productionCountries = movie.custom_production_countries || movie.tmdb_production_countries || []
 
-  // 監督、脚本、キャストを分類
+  // 監督、脚本、キャストを分類（ID付き）
   const directors = movie.movie_persons
     ?.filter((mp: any) => mp.role === 'director')
-    .map((mp: any) => mp.person.display_name) || []
+    .map((mp: any) => ({
+      id: mp.id,
+      personId: mp.person.id,
+      displayName: mp.person.display_name,
+      tmdbPersonId: mp.person.tmdb_person_id,
+    })) || []
 
   const writers = movie.movie_persons
     ?.filter((mp: any) => mp.role === 'writer')
-    .map((mp: any) => mp.person.display_name) || []
+    .map((mp: any) => ({
+      id: mp.id,
+      personId: mp.person.id,
+      displayName: mp.person.display_name,
+      tmdbPersonId: mp.person.tmdb_person_id,
+    })) || []
 
   const cast = movie.movie_persons
     ?.filter((mp: any) => mp.role === 'cast')
     .sort((a: any, b: any) => (a.cast_order || 999) - (b.cast_order || 999))
-    .map((mp: any) => mp.person.display_name) || []
+    .map((mp: any) => ({
+      id: mp.id,
+      personId: mp.person.id,
+      displayName: mp.person.display_name,
+      tmdbPersonId: mp.person.tmdb_person_id,
+      castOrder: mp.cast_order,
+    })) || []
+
+  // MovieActions用のデータ（比較用）
+  const currentDataForRefresh = {
+    title: movie.tmdb_title,
+    releaseDate: movie.tmdb_release_date,
+    productionCountries: movie.tmdb_production_countries || [],
+    posterPath: movie.tmdb_poster_path,
+    directors: directors.map((d: any) => ({
+      id: d.id,
+      personId: d.personId,
+      name: d.displayName,
+      tmdbId: d.tmdbPersonId,
+    })),
+    writers: writers.map((w: any) => ({
+      id: w.id,
+      personId: w.personId,
+      name: w.displayName,
+      tmdbId: w.tmdbPersonId,
+    })),
+    cast: cast.map((c: any) => ({
+      id: c.id,
+      personId: c.personId,
+      name: c.displayName,
+      tmdbId: c.tmdbPersonId,
+      order: c.castOrder || 0,
+    })),
+  }
 
   return (
     <div className="space-y-6">
@@ -63,9 +109,11 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
         <Link href="/movies">
           <Button variant="outline">← 一覧に戻る</Button>
         </Link>
-        <Link href={`/movies/${id}/edit`}>
-          <Button variant="outline">編集</Button>
-        </Link>
+        <MovieActions
+          movieId={id}
+          tmdbMovieId={movie.tmdb_movie_id}
+          currentData={currentDataForRefresh}
+        />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -114,7 +162,7 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
                   <CardTitle className="text-lg">監督</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-slate-700">{directors.join(', ')}</p>
+                  <EditablePersonList persons={directors} />
                 </CardContent>
               </Card>
             )}
@@ -125,7 +173,7 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
                   <CardTitle className="text-lg">脚本</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-slate-700">{writers.join(', ')}</p>
+                  <EditablePersonList persons={writers} />
                 </CardContent>
               </Card>
             )}
@@ -135,12 +183,18 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
                 <CardHeader>
                   <CardTitle className="text-lg">キャスト</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-slate-700">{cast.slice(0, 10).join(', ')}</p>
-                  {cast.length > 10 && (
-                    <p className="text-slate-500 text-sm mt-2">
-                      他 {cast.length - 10} 名
-                    </p>
+                <CardContent className="space-y-4">
+                  {/* 主演（上位3名） */}
+                  <div>
+                    <p className="text-xs text-slate-500 mb-2">主演</p>
+                    <EditablePersonList persons={cast.slice(0, 3)} />
+                  </div>
+                  {/* その他のキャスト */}
+                  {cast.length > 3 && (
+                    <div>
+                      <p className="text-xs text-slate-500 mb-2">出演</p>
+                      <EditablePersonList persons={cast.slice(3)} maxDisplay={7} />
+                    </div>
                   )}
                 </CardContent>
               </Card>

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getMovieDetails, getMovieCredits } from '@/lib/tmdb/client'
+import { getMovieDetails, getMovieCredits, getPersonsJapaneseNames } from '@/lib/tmdb/client'
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
@@ -21,7 +21,35 @@ export async function GET(
       getMovieCredits(movieId),
     ])
 
-    return NextResponse.json({ details, credits })
+    // 監督、脚本家、主要キャスト（上位20名）の人物IDを収集
+    const directors = credits.crew.filter(c => c.job === 'Director')
+    const writers = credits.crew.filter(c => c.job === 'Writer' || c.job === 'Screenplay').slice(0, 5)
+    const topCast = credits.cast.slice(0, 20)
+
+    const personIds = [
+      ...directors.map(d => d.id),
+      ...writers.map(w => w.id),
+      ...topCast.map(c => c.id),
+    ]
+    const uniquePersonIds = [...new Set(personIds)]
+
+    // 日本語名を取得
+    const japaneseNames = await getPersonsJapaneseNames(uniquePersonIds)
+
+    // クレジット情報に日本語名を追加
+    const creditsWithJapaneseName = {
+      ...credits,
+      crew: credits.crew.map(member => ({
+        ...member,
+        display_name: japaneseNames.get(member.id) || member.name,
+      })),
+      cast: credits.cast.map(member => ({
+        ...member,
+        display_name: japaneseNames.get(member.id) || member.name,
+      })),
+    }
+
+    return NextResponse.json({ details, credits: creditsWithJapaneseName })
   } catch (error) {
     console.error('TMDB movie details error:', error)
     return NextResponse.json(

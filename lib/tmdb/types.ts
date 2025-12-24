@@ -39,6 +39,7 @@ export interface TMDBCastMember {
   cast_id: number
   credit_id: string
   name: string
+  display_name?: string  // 日本語名（取得できた場合）
   character: string
   gender: number
   order: number
@@ -49,6 +50,7 @@ export interface TMDBCrewMember {
   id: number
   credit_id: string
   name: string
+  display_name?: string  // 日本語名（取得できた場合）
   job: string
   department: string
   gender: number
@@ -59,4 +61,16 @@ export interface TMDBCredits {
   id: number
   cast: TMDBCastMember[]
   crew: TMDBCrewMember[]
+}
+
+export interface TMDBPersonDetails {
+  id: number
+  name: string
+  also_known_as: string[]
+  biography: string
+  birthday: string | null
+  deathday: string | null
+  place_of_birth: string | null
+  profile_path: string | null
+  popularity: number
 }

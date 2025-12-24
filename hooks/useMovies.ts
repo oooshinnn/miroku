@@ -68,12 +68,14 @@ export function useMovies() {
     // 監督を保存
     const directors = credits.crew.filter(c => c.job === 'Director')
     for (const director of directors) {
+      const displayName = director.display_name || director.name
+
+      // 同じTMDB IDの人物を検索
       const { data: person } = await supabase
         .from('persons')
         .select('*')
         .eq('user_id', user.id)
         .eq('tmdb_person_id', director.id)
-        .eq('display_name', director.name)
         .maybeSingle() as { data: Person | null }
 
       let personId: string
@@ -84,7 +86,7 @@ export function useMovies() {
         const personData: PersonInsert = {
           user_id: user.id,
           tmdb_person_id: director.id,
-          display_name: director.name,
+          display_name: displayName,
         }
 
         const { data: newPerson, error: personError } = (await supabase
@@ -109,12 +111,13 @@ export function useMovies() {
     // 脚本家を保存
     const writers = credits.crew.filter(c => c.job === 'Writer' || c.job === 'Screenplay')
     for (const writer of writers.slice(0, 5)) {
+      const displayName = writer.display_name || writer.name
+
       const { data: person } = await supabase
         .from('persons')
         .select('*')
         .eq('user_id', user.id)
         .eq('tmdb_person_id', writer.id)
-        .eq('display_name', writer.name)
         .maybeSingle() as { data: Person | null }
 
       let personId: string
@@ -125,7 +128,7 @@ export function useMovies() {
         const personData: PersonInsert = {
           user_id: user.id,
           tmdb_person_id: writer.id,
-          display_name: writer.name,
+          display_name: displayName,
         }
 
         const { data: newPerson, error: personError } = (await supabase
@@ -149,12 +152,13 @@ export function useMovies() {
 
     // キャストを保存（上位20名）
     for (const cast of credits.cast.slice(0, 20)) {
+      const displayName = cast.display_name || cast.name
+
       const { data: person } = await supabase
         .from('persons')
         .select('*')
         .eq('user_id', user.id)
         .eq('tmdb_person_id', cast.id)
-        .eq('display_name', cast.name)
         .maybeSingle() as { data: Person | null }
 
       let personId: string
@@ -165,7 +169,7 @@ export function useMovies() {
         const personData: PersonInsert = {
           user_id: user.id,
           tmdb_person_id: cast.id,
-          display_name: cast.name,
+          display_name: displayName,
         }
 
         const { data: newPerson, error: personError } = (await supabase
