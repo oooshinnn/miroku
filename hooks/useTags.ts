@@ -1,30 +1,34 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import useSWR from 'swr'
 import { createClient } from '@/lib/supabase/client'
 import type { Tag, TagInsert, TagUpdate } from '@/types/tag'
 
+const TAGS_CACHE_KEY = 'tags'
+
+const fetchTags = async (): Promise<Tag[]> => {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('tags')
+    .select('*')
+    .order('name', { ascending: true })
+
+  if (error) throw error
+  return data || []
+}
+
 export function useTags() {
-  const [tags, setTags] = useState<Tag[]>([])
-  const [loading, setLoading] = useState(true)
   const supabase = createClient()
 
-  const fetchTags = async () => {
-    setLoading(true)
-    const { data, error } = await supabase
-      .from('tags')
-      .select('*')
-      .order('name', { ascending: true })
-
-    if (!error && data) {
-      setTags(data)
+  const { data: tags = [], isLoading: loading, mutate } = useSWR<Tag[]>(
+    TAGS_CACHE_KEY,
+    fetchTags,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: 60000,
     }
-    setLoading(false)
-  }
-
-  useEffect(() => {
-    fetchTags()
-  }, [])
+  )
 
   const addTag = async (tag: Omit<TagInsert, 'user_id'>) => {
     const {
@@ -48,7 +52,7 @@ export function useTags() {
       throw error
     }
 
-    await fetchTags()
+    await mutate()
     return data
   }
 
@@ -62,7 +66,7 @@ export function useTags() {
       throw error
     }
 
-    await fetchTags()
+    await mutate()
     return data
   }
 
@@ -73,7 +77,7 @@ export function useTags() {
       throw error
     }
 
-    await fetchTags()
+    await mutate()
   }
 
   return {
@@ -82,6 +86,6 @@ export function useTags() {
     addTag,
     updateTag,
     deleteTag,
-    refetch: fetchTags,
+    refetch: () => mutate(),
   }
 }

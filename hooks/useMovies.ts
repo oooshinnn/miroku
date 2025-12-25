@@ -1,32 +1,44 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import useSWR, { mutate } from 'swr'
 import { createClient } from '@/lib/supabase/client'
 import type { Movie, MovieInsert, Person, PersonInsert, MoviePersonInsert } from '@/types/movie'
 import type { Tag } from '@/types/tag'
 import type { TMDBMovie, TMDBMovieDetails, TMDBCredits } from '@/lib/tmdb/types'
 
+// SWR キャッシュキー
+const MOVIES_CACHE_KEY = 'movies'
+
+// 映画一覧を取得する fetcher
+const fetchMovies = async (): Promise<Movie[]> => {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('movies')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data || []
+}
+
+// キャッシュを無効化して再取得
+export const invalidateMoviesCache = () => {
+  mutate(MOVIES_CACHE_KEY)
+}
+
 export function useMovies() {
-  const [movies, setMovies] = useState<Movie[]>([])
-  const [loading, setLoading] = useState(true)
   const supabase = createClient()
 
-  const fetchMovies = async () => {
-    setLoading(true)
-    const { data, error } = await supabase
-      .from('movies')
-      .select('*')
-      .order('created_at', { ascending: false })
-
-    if (!error && data) {
-      setMovies(data)
+  // SWR でデータ取得（キャッシュあり）
+  const { data: movies = [], isLoading: loading, mutate: mutateMovies } = useSWR<Movie[]>(
+    MOVIES_CACHE_KEY,
+    fetchMovies,
+    {
+      revalidateOnFocus: false, // フォーカス時の自動再取得を無効化
+      revalidateOnReconnect: false, // 再接続時の自動再取得を無効化
+      dedupingInterval: 60000, // 1分間は同じリクエストを重複排除
     }
-    setLoading(false)
-  }
-
-  useEffect(() => {
-    fetchMovies()
-  }, [])
+  )
 
   // 高速追加: 基本情報でDBに保存（オプションでクレジットも保存）
   const addMovieQuick = async (
@@ -42,7 +54,6 @@ export function useMovies() {
     }
 
     // 検索結果の基本情報で映画を挿入（製作国があれば含める）
-    // tmdb_overviewはスキーマキャッシュに反映されていないため一時的に除外
     const movieData: MovieInsert = {
       user_id: user.id,
       tmdb_movie_id: tmdbMovie.id,
@@ -71,7 +82,9 @@ export function useMovies() {
       await saveCreditsForMovie(newMovie.id, user.id, options.credits)
     }
 
-    await fetchMovies()
+    // キャッシュを更新（楽観的更新）
+    mutateMovies([newMovie, ...movies], false)
+
     return newMovie
   }
 
@@ -85,12 +98,11 @@ export function useMovies() {
     for (const director of allDirectors) {
       const personId = await findOrCreatePerson(userId, director.id, director.name)
       if (personId) {
-        const { error } = await supabase.from('movie_persons').insert({
+        await supabase.from('movie_persons').insert({
           movie_id: movieId,
           person_id: personId,
           role: 'director',
         } as any)
-        if (error) console.error('Error saving director:', error)
       }
     }
 
@@ -137,7 +149,6 @@ export function useMovies() {
       return person.id
     }
 
-    // tmdb_profile_pathはスキーマキャッシュに反映されていないため一時的に除外
     const personData: Omit<PersonInsert, 'tmdb_profile_path'> = {
       user_id: userId,
       tmdb_person_id: tmdbPersonId,
@@ -157,7 +168,6 @@ export function useMovies() {
   }
 
   // クレジット情報を後から取得・保存
-  // 戻り値: true=保存成功, false=クレジット情報が空, undefined=既に存在
   const fetchAndSaveCredits = async (movieId: string, tmdbMovieId: number): Promise<boolean | undefined> => {
     const {
       data: { user },
@@ -173,7 +183,7 @@ export function useMovies() {
       .limit(1)
 
     if (existingPersons && existingPersons.length > 0) {
-      return undefined // 既にクレジット情報がある
+      return undefined
     }
 
     // TMDB APIから詳細とクレジット情報を取得
@@ -195,13 +205,11 @@ export function useMovies() {
     const allCast = credits.cast.slice(0, 5)
 
     if (allDirectors.length === 0 && allWriters.length === 0 && allCast.length === 0) {
-      return false // クレジット情報が空
+      return false
     }
 
     // 監督を保存
     for (const director of allDirectors) {
-      const displayName = director.name
-
       const { data: person } = await supabase
         .from('persons')
         .select('*')
@@ -213,13 +221,11 @@ export function useMovies() {
 
       if (person) {
         personId = person.id
-        // tmdb_profile_pathの更新はスキーマキャッシュ問題のため一時的にスキップ
       } else {
-        // tmdb_profile_pathはスキーマキャッシュに反映されていないため除外
         const personData = {
           user_id: user.id,
           tmdb_person_id: director.id,
-          display_name: displayName,
+          display_name: director.name,
         }
 
         const { data: newPerson, error: personError } = (await supabase
@@ -243,8 +249,6 @@ export function useMovies() {
 
     // 脚本家を保存
     for (const writer of allWriters.slice(0, 5)) {
-      const displayName = writer.name
-
       const { data: person } = await supabase
         .from('persons')
         .select('*')
@@ -256,13 +260,11 @@ export function useMovies() {
 
       if (person) {
         personId = person.id
-        // tmdb_profile_pathの更新はスキーマキャッシュ問題のため一時的にスキップ
       } else {
-        // tmdb_profile_pathはスキーマキャッシュに反映されていないため除外
         const personData = {
           user_id: user.id,
           tmdb_person_id: writer.id,
-          display_name: displayName,
+          display_name: writer.name,
         }
 
         const { data: newPerson, error: personError } = (await supabase
@@ -286,8 +288,6 @@ export function useMovies() {
 
     // 主演を保存（上位5名）
     for (const castMember of allCast) {
-      const displayName = castMember.name
-
       const { data: person } = await supabase
         .from('persons')
         .select('*')
@@ -299,13 +299,11 @@ export function useMovies() {
 
       if (person) {
         personId = person.id
-        // tmdb_profile_pathの更新はスキーマキャッシュ問題のため一時的にスキップ
       } else {
-        // tmdb_profile_pathはスキーマキャッシュに反映されていないため除外
         const personData = {
           user_id: user.id,
           tmdb_person_id: castMember.id,
-          display_name: displayName,
+          display_name: castMember.name,
         }
 
         const { data: newPerson, error: personError } = (await supabase
@@ -328,7 +326,7 @@ export function useMovies() {
       await supabase.from('movie_persons').insert(moviePersonData as any)
     }
 
-    return true // クレジット情報を保存した
+    return true
   }
 
   // 従来の追加関数（互換性のために残す）
@@ -390,7 +388,6 @@ export function useMovies() {
       throw new Error('ユーザーがログインしていません')
     }
 
-    // 映画を挿入（カスタムデータとして保存）
     const movieData: MovieInsert = {
       user_id: user.id,
       custom_title: data.title,
@@ -413,7 +410,6 @@ export function useMovies() {
     if (data.director?.trim()) {
       const directorName = data.director.trim()
 
-      // 既存の人物を検索
       const { data: existingPerson } = await supabase
         .from('persons')
         .select('*')
@@ -453,7 +449,8 @@ export function useMovies() {
       await supabase.from('movie_persons').insert(moviePersonData as any)
     }
 
-    await fetchMovies()
+    // キャッシュを更新（楽観的更新）
+    mutateMovies([newMovie, ...movies], false)
     return newMovie
   }
 
@@ -491,6 +488,6 @@ export function useMovies() {
     removeTagFromMovie,
     getAddedTmdbIds,
     getTmdbIdToMovieIdMap,
-    refetch: fetchMovies,
+    refetch: () => mutateMovies(), // キャッシュを無効化して再取得
   }
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import useSWR from 'swr'
 import { createClient } from '@/lib/supabase/client'
 import type { WatchLog, WatchLogInsert, WatchLogUpdate, WatchLogWithMovie, WatchScore } from '@/types/watch-log'
 
@@ -9,47 +9,53 @@ interface UseWatchLogsOptions {
   scoreFilter?: WatchScore | null
 }
 
-export function useWatchLogs(options: UseWatchLogsOptions = {}) {
+const createCacheKey = (options: UseWatchLogsOptions) => {
+  return ['watch-logs', options.movieId || 'all', options.scoreFilter || 'all']
+}
+
+const fetchWatchLogs = async (options: UseWatchLogsOptions): Promise<WatchLogWithMovie[]> => {
+  const supabase = createClient()
   const { movieId, scoreFilter } = options
-  const [watchLogs, setWatchLogs] = useState<WatchLogWithMovie[]>([])
-  const [loading, setLoading] = useState(true)
+
+  let query = supabase
+    .from('watch_logs')
+    .select(`
+      *,
+      movie:movies(
+        id,
+        tmdb_title,
+        custom_title,
+        tmdb_poster_path
+      )
+    `)
+    .order('watched_at', { ascending: false })
+
+  if (movieId) {
+    query = query.eq('movie_id', movieId)
+  }
+
+  if (scoreFilter) {
+    query = query.eq('score', scoreFilter)
+  }
+
+  const { data, error } = await query as { data: WatchLogWithMovie[] | null; error: any }
+
+  if (error) throw error
+  return data || []
+}
+
+export function useWatchLogs(options: UseWatchLogsOptions = {}) {
   const supabase = createClient()
 
-  const fetchWatchLogs = useCallback(async () => {
-    setLoading(true)
-
-    let query = supabase
-      .from('watch_logs')
-      .select(`
-        *,
-        movie:movies(
-          id,
-          tmdb_title,
-          custom_title,
-          tmdb_poster_path
-        )
-      `)
-      .order('watched_at', { ascending: false })
-
-    if (movieId) {
-      query = query.eq('movie_id', movieId)
+  const { data: watchLogs = [], isLoading: loading, mutate } = useSWR<WatchLogWithMovie[]>(
+    createCacheKey(options),
+    () => fetchWatchLogs(options),
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: 60000,
     }
-
-    if (scoreFilter) {
-      query = query.eq('score', scoreFilter)
-    }
-
-    const { data, error } = await query as { data: WatchLogWithMovie[] | null; error: any }
-
-    if (!error && data) {
-      setWatchLogs(data)
-    }
-    setLoading(false)
-  }, [movieId, scoreFilter])
-
-  useEffect(() => {
-    fetchWatchLogs()
-  }, [fetchWatchLogs])
+  )
 
   const addWatchLog = async (watchLog: Omit<WatchLogInsert, 'user_id'>) => {
     const {
@@ -73,7 +79,7 @@ export function useWatchLogs(options: UseWatchLogsOptions = {}) {
       throw error
     }
 
-    await fetchWatchLogs()
+    await mutate()
     return data
   }
 
@@ -87,7 +93,7 @@ export function useWatchLogs(options: UseWatchLogsOptions = {}) {
       throw error
     }
 
-    await fetchWatchLogs()
+    await mutate()
     return data
   }
 
@@ -101,7 +107,7 @@ export function useWatchLogs(options: UseWatchLogsOptions = {}) {
       throw error
     }
 
-    await fetchWatchLogs()
+    await mutate()
   }
 
   return {
@@ -110,6 +116,6 @@ export function useWatchLogs(options: UseWatchLogsOptions = {}) {
     addWatchLog,
     updateWatchLog,
     deleteWatchLog,
-    refetch: fetchWatchLogs,
+    refetch: () => mutate(),
   }
 }

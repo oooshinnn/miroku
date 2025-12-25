@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useMemo } from 'react'
+import useSWR from 'swr'
 import { createClient } from '@/lib/supabase/client'
 import type { Person } from '@/types/movie'
 
@@ -9,78 +10,82 @@ export interface PersonWithStats extends Person {
   roles: ('director' | 'writer' | 'cast')[]
 }
 
-export function usePersons() {
-  const [persons, setPersons] = useState<Person[]>([])
-  const [personsWithStats, setPersonsWithStats] = useState<PersonWithStats[]>([])
-  const [loading, setLoading] = useState(true)
+interface PersonsData {
+  persons: Person[]
+  moviePersons: { person_id: string; movie_id: string; role: string }[]
+}
+
+const PERSONS_CACHE_KEY = 'persons-with-stats'
+
+const fetchPersonsData = async (): Promise<PersonsData> => {
   const supabase = createClient()
 
-  const fetchPersons = async () => {
-    setLoading(true)
+  // 基本的な人物リストを取得
+  const { data: personsData, error } = (await supabase
+    .from('persons')
+    .select('*')
+    .is('merged_into_id', null)
+    .order('display_name', { ascending: true })) as { data: Person[] | null; error: any }
 
-    try {
-      // 基本的な人物リストを取得
-      const { data: personsData, error } = (await supabase
-        .from('persons')
-        .select('*')
-        .is('merged_into_id', null)
-        .order('display_name', { ascending: true })) as { data: Person[] | null; error: any }
+  if (error) throw error
 
-      if (error) {
-        console.error('Failed to fetch persons:', error)
-        setPersons([])
-        setPersonsWithStats([])
-        setLoading(false)
-        return
-      }
+  // 統計情報用のmovie_personsを取得
+  const { data: moviePersons } = (await supabase
+    .from('movie_persons')
+    .select('person_id, movie_id, role')) as { data: { person_id: string; movie_id: string; role: string }[] | null }
 
-      setPersons(personsData || [])
-
-      // 統計情報付きで取得
-      const { data: moviePersons } = (await supabase
-        .from('movie_persons')
-        .select('person_id, movie_id, role')) as { data: { person_id: string; movie_id: string; role: string }[] | null }
-
-      if (moviePersons && personsData) {
-        const statsMap = new Map<
-          string,
-          { movies: Set<string>; roles: Set<string> }
-        >()
-
-        moviePersons.forEach((mp: any) => {
-          if (!statsMap.has(mp.person_id)) {
-            statsMap.set(mp.person_id, {
-              movies: new Set(),
-              roles: new Set(),
-            })
-          }
-          statsMap.get(mp.person_id)!.movies.add(mp.movie_id)
-          statsMap.get(mp.person_id)!.roles.add(mp.role)
-        })
-
-        const withStats: PersonWithStats[] = personsData.map((person) => {
-          const stats = statsMap.get(person.id)
-          return {
-            ...person,
-            movie_count: stats?.movies.size || 0,
-            roles: stats ? (Array.from(stats.roles) as any) : [],
-          }
-        })
-
-        setPersonsWithStats(withStats)
-      }
-    } catch (error) {
-      console.error('Failed to fetch persons:', error)
-      setPersons([])
-      setPersonsWithStats([])
-    } finally {
-      setLoading(false)
-    }
+  return {
+    persons: personsData || [],
+    moviePersons: moviePersons || [],
   }
+}
 
-  useEffect(() => {
-    fetchPersons()
-  }, [])
+export function usePersons() {
+  const supabase = createClient()
+
+  const { data, isLoading: loading, mutate } = useSWR<PersonsData>(
+    PERSONS_CACHE_KEY,
+    fetchPersonsData,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: 60000,
+    }
+  )
+
+  const persons = data?.persons || []
+
+  // 統計情報をクライアント側で計算
+  const personsWithStats = useMemo(() => {
+    if (!data) return []
+
+    const { persons, moviePersons } = data
+
+    const statsMap = new Map<
+      string,
+      { movies: Set<string>; roles: Set<string> }
+    >()
+
+    moviePersons.forEach((mp) => {
+      if (!statsMap.has(mp.person_id)) {
+        statsMap.set(mp.person_id, {
+          movies: new Set(),
+          roles: new Set(),
+        })
+      }
+      statsMap.get(mp.person_id)!.movies.add(mp.movie_id)
+      statsMap.get(mp.person_id)!.roles.add(mp.role)
+    })
+
+    return persons.map((person) => {
+      const stats = statsMap.get(person.id)
+      return {
+        ...person,
+        movie_count: stats?.movies.size || 0,
+        roles: stats ? (Array.from(stats.roles) as ('director' | 'writer' | 'cast')[]) : [],
+      }
+    })
+  }, [data])
 
   const updatePerson = async (id: string, displayName: string) => {
     const query = supabase.from('persons')
@@ -92,7 +97,7 @@ export function usePersons() {
       throw error
     }
 
-    await fetchPersons()
+    await mutate()
   }
 
   const mergePersons = async (sourceId: string, targetId: string) => {
@@ -146,7 +151,7 @@ export function usePersons() {
       throw mergeError
     }
 
-    await fetchPersons()
+    await mutate()
   }
 
   const unmergePersons = async (personId: string) => {
@@ -160,7 +165,7 @@ export function usePersons() {
       throw error
     }
 
-    await fetchPersons()
+    await mutate()
   }
 
   const getMergedPersons = async (targetId: string): Promise<Person[]> => {
@@ -196,7 +201,7 @@ export function usePersons() {
       throw error
     }
 
-    await fetchPersons()
+    await mutate()
     return unusedIds.length
   }
 
@@ -209,6 +214,6 @@ export function usePersons() {
     unmergePersons,
     getMergedPersons,
     deleteUnusedPersons,
-    refetch: fetchPersons,
+    refetch: () => mutate(),
   }
 }

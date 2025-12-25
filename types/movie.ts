@@ -21,6 +21,8 @@ export interface MovieWithDetails extends Movie {
 export type WatchScore = 'bad' | 'neutral' | 'good'
 
 export interface MovieWithExtras extends Movie {
-  tags?: { id: string; name: string; color: string | null }[]
-  bestScore?: WatchScore | null
+  tags: { id: string; name: string; color: string | null }[]
+  bestScore: WatchScore | null
+  latestWatchedAt: string | null
+  personIds: Set<string>
 }

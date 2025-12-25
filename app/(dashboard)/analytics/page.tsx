@@ -1,136 +1,144 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useMemo } from 'react'
+import useSWR from 'swr'
 import { createClient } from '@/lib/supabase/client'
 import { MonthlyWatchChart } from '@/components/analytics/MonthlyWatchChart'
 import { DirectorChart } from '@/components/analytics/DirectorChart'
 import { CastChart } from '@/components/analytics/CastChart'
 
-interface MonthlyData {
-  month: string
-  count: number
+interface AnalyticsData {
+  watchLogs: { watched_at: string; movie_id: string }[]
+  moviePersons: {
+    person_id: string
+    movie_id: string
+    role: string
+    person: { id: string; display_name: string; merged_into_id: string | null }
+  }[]
 }
 
-interface PersonData {
-  name: string
-  count: number
+const ANALYTICS_CACHE_KEY = 'analytics-data'
+
+const fetchAnalyticsData = async (): Promise<AnalyticsData> => {
+  const supabase = createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) throw new Error('Not authenticated')
+
+  // 視聴ログを取得
+  const { data: watchLogs } = (await supabase
+    .from('watch_logs')
+    .select('watched_at, movie_id')
+    .eq('user_id', user.id)) as { data: { watched_at: string; movie_id: string }[] | null }
+
+  // 監督・キャスト情報を取得
+  const { data: moviePersons } = (await supabase
+    .from('movie_persons')
+    .select(`
+      person_id,
+      movie_id,
+      role,
+      person:persons(
+        id,
+        display_name,
+        merged_into_id
+      )
+    `)) as { data: any[] | null }
+
+  return {
+    watchLogs: watchLogs || [],
+    moviePersons: moviePersons || [],
+  }
 }
 
 export default function AnalyticsPage() {
-  const [monthlyData, setMonthlyData] = useState<MonthlyData[]>([])
-  const [directorData, setDirectorData] = useState<PersonData[]>([])
-  const [castData, setCastData] = useState<PersonData[]>([])
-  const [loading, setLoading] = useState(true)
-  const supabase = createClient()
-
-  useEffect(() => {
-    const fetchAnalytics = async () => {
-      setLoading(true)
-
-      try {
-        const {
-          data: { user },
-        } = await supabase.auth.getUser()
-
-        if (!user) return
-
-        // 月別視聴本数を取得
-        const { data: watchLogs } = (await supabase
-          .from('watch_logs')
-          .select('watched_at, movie_id')
-          .eq('user_id', user.id)) as { data: any[] | null }
-
-        if (watchLogs) {
-          // 月ごとにユニークな映画IDをカウント
-          const monthlyMap = new Map<string, Set<string>>()
-
-          watchLogs.forEach((log) => {
-            const date = new Date(log.watched_at)
-            const month = `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}`
-            if (!monthlyMap.has(month)) {
-              monthlyMap.set(month, new Set())
-            }
-            monthlyMap.get(month)!.add(log.movie_id)
-          })
-
-          const monthly = Array.from(monthlyMap.entries())
-            .map(([month, movieIds]) => ({
-              month,
-              count: movieIds.size,
-            }))
-            .sort((a, b) => a.month.localeCompare(b.month))
-
-          setMonthlyData(monthly)
-        }
-
-        // 監督・キャスト別視聴作品数を取得
-        const { data: moviePersons } = (await supabase
-          .from('movie_persons')
-          .select(`
-            person_id,
-            movie_id,
-            role,
-            person:persons(
-              id,
-              display_name,
-              merged_into_id
-            )
-          `)) as { data: any[] | null }
-
-        if (moviePersons) {
-          // 監督データ
-          const directorMap = new Map<string, { name: string; movies: Set<string> }>()
-          // キャストデータ
-          const castMap = new Map<string, { name: string; movies: Set<string> }>()
-
-          moviePersons.forEach((mp) => {
-            // マージされた人物は除外
-            if (mp.person.merged_into_id) return
-
-            const name = mp.person.display_name
-            const movieId = mp.movie_id
-
-            if (mp.role === 'director') {
-              if (!directorMap.has(name)) {
-                directorMap.set(name, { name, movies: new Set() })
-              }
-              directorMap.get(name)!.movies.add(movieId)
-            } else if (mp.role === 'cast') {
-              if (!castMap.has(name)) {
-                castMap.set(name, { name, movies: new Set() })
-              }
-              castMap.get(name)!.movies.add(movieId)
-            }
-          })
-
-          const directors = Array.from(directorMap.values())
-            .map((d) => ({
-              name: d.name,
-              count: d.movies.size,
-            }))
-            .sort((a, b) => b.count - a.count)
-            .slice(0, 10)
-
-          const casts = Array.from(castMap.values())
-            .map((c) => ({
-              name: c.name,
-              count: c.movies.size,
-            }))
-            .sort((a, b) => b.count - a.count)
-            .slice(0, 10)
-
-          setDirectorData(directors)
-          setCastData(casts)
-        }
-      } catch (error) {
-        console.error('分析データの取得に失敗しました:', error)
-      } finally {
-        setLoading(false)
-      }
+  const { data, isLoading: loading } = useSWR<AnalyticsData>(
+    ANALYTICS_CACHE_KEY,
+    fetchAnalyticsData,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: 60000,
     }
+  )
 
-    fetchAnalytics()
-  }, [])
+  // 月別データを計算
+  const monthlyData = useMemo(() => {
+    if (!data?.watchLogs) return []
+
+    const monthlyMap = new Map<string, Set<string>>()
+
+    data.watchLogs.forEach((log) => {
+      const date = new Date(log.watched_at)
+      const month = `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}`
+      if (!monthlyMap.has(month)) {
+        monthlyMap.set(month, new Set())
+      }
+      monthlyMap.get(month)!.add(log.movie_id)
+    })
+
+    return Array.from(monthlyMap.entries())
+      .map(([month, movieIds]) => ({
+        month,
+        count: movieIds.size,
+      }))
+      .sort((a, b) => a.month.localeCompare(b.month))
+  }, [data?.watchLogs])
+
+  // 監督データを計算
+  const directorData = useMemo(() => {
+    if (!data?.moviePersons) return []
+
+    const directorMap = new Map<string, { name: string; movies: Set<string> }>()
+
+    data.moviePersons.forEach((mp) => {
+      if (mp.person.merged_into_id) return
+      if (mp.role !== 'director') return
+
+      const name = mp.person.display_name
+      if (!directorMap.has(name)) {
+        directorMap.set(name, { name, movies: new Set() })
+      }
+      directorMap.get(name)!.movies.add(mp.movie_id)
+    })
+
+    return Array.from(directorMap.values())
+      .map((d) => ({
+        name: d.name,
+        count: d.movies.size,
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10)
+  }, [data?.moviePersons])
+
+  // キャストデータを計算
+  const castData = useMemo(() => {
+    if (!data?.moviePersons) return []
+
+    const castMap = new Map<string, { name: string; movies: Set<string> }>()
+
+    data.moviePersons.forEach((mp) => {
+      if (mp.person.merged_into_id) return
+      if (mp.role !== 'cast') return
+
+      const name = mp.person.display_name
+      if (!castMap.has(name)) {
+        castMap.set(name, { name, movies: new Set() })
+      }
+      castMap.get(name)!.movies.add(mp.movie_id)
+    })
+
+    return Array.from(castMap.values())
+      .map((c) => ({
+        name: c.name,
+        count: c.movies.size,
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10)
+  }, [data?.moviePersons])
 
   if (loading) {
     return <div className="text-center py-8">読み込み中...</div>
