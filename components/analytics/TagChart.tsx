@@ -3,22 +3,22 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
-interface MonthlyData {
-  month: string
+interface TagData {
+  name: string
   count: number
 }
 
-interface MonthlyWatchChartProps {
-  data: MonthlyData[]
+interface TagChartProps {
+  data: TagData[]
 }
 
-export function MonthlyWatchChart({ data }: MonthlyWatchChartProps) {
+export function TagChart({ data }: TagChartProps) {
   if (data.length === 0) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>月別視聴本数</CardTitle>
-          <CardDescription>各月に視聴した映画の本数</CardDescription>
+          <CardTitle>タグ別視聴本数</CardTitle>
+          <CardDescription>タグごとの視聴本数（Top 10）</CardDescription>
         </CardHeader>
         <CardContent>
           <p className="text-slate-600 text-center py-8">データがありません</p>
@@ -30,18 +30,18 @@ export function MonthlyWatchChart({ data }: MonthlyWatchChartProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>月別視聴本数</CardTitle>
-        <CardDescription>各月に視聴した映画の本数（重複除外）</CardDescription>
+        <CardTitle>タグ別視聴本数</CardTitle>
+        <CardDescription>タグごとの視聴本数（Top 10）</CardDescription>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={data}>
+        <ResponsiveContainer width="100%" height={400}>
+          <BarChart data={data} layout="vertical">
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="month" />
-            <YAxis allowDecimals={false} />
+            <XAxis type="number" allowDecimals={false} />
+            <YAxis dataKey="name" type="category" width={150} />
             <Tooltip />
             <Legend />
-            <Bar dataKey="count" fill="#3b82f6" name="視聴本数" />
+            <Bar dataKey="count" fill="#8b5cf6" name="視聴本数" />
           </BarChart>
         </ResponsiveContainer>
       </CardContent>

@@ -6,6 +6,8 @@ import { createClient } from '@/lib/supabase/client'
 import { MonthlyWatchChart } from '@/components/analytics/MonthlyWatchChart'
 import { DirectorChart } from '@/components/analytics/DirectorChart'
 import { CastChart } from '@/components/analytics/CastChart'
+import { CountryChart } from '@/components/analytics/CountryChart'
+import { TagChart } from '@/components/analytics/TagChart'
 
 interface AnalyticsData {
   watchLogs: { watched_at: string; movie_id: string }[]
@@ -14,6 +16,15 @@ interface AnalyticsData {
     movie_id: string
     role: string
     person: { id: string; display_name: string; merged_into_id: string | null }
+  }[]
+  movies: {
+    id: string
+    tmdb_production_countries: string[] | null
+    custom_production_countries: string[] | null
+  }[]
+  movieTags: {
+    movie_id: string
+    tag: { id: string; name: string }
   }[]
 }
 
@@ -48,9 +59,25 @@ const fetchAnalyticsData = async (): Promise<AnalyticsData> => {
       )
     `)) as { data: any[] | null }
 
+  // 映画情報を取得（製作国用）
+  const { data: movies } = (await supabase
+    .from('movies')
+    .select('id, tmdb_production_countries, custom_production_countries')
+    .eq('user_id', user.id)) as { data: { id: string; tmdb_production_countries: string[] | null; custom_production_countries: string[] | null }[] | null }
+
+  // タグ情報を取得
+  const { data: movieTags } = (await supabase
+    .from('movie_tags')
+    .select(`
+      movie_id,
+      tag:tags(id, name)
+    `)) as { data: any[] | null }
+
   return {
     watchLogs: watchLogs || [],
     moviePersons: moviePersons || [],
+    movies: movies || [],
+    movieTags: movieTags || [],
   }
 }
 
@@ -140,6 +167,49 @@ export default function AnalyticsPage() {
       .slice(0, 10)
   }, [data?.moviePersons])
 
+  // 製作国データを計算
+  const countryData = useMemo(() => {
+    if (!data?.movies) return []
+
+    const countryMap = new Map<string, number>()
+
+    data.movies.forEach((movie) => {
+      const countries = movie.custom_production_countries || movie.tmdb_production_countries || []
+      countries.forEach((country) => {
+        countryMap.set(country, (countryMap.get(country) || 0) + 1)
+      })
+    })
+
+    return Array.from(countryMap.entries())
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10)
+  }, [data?.movies])
+
+  // タグデータを計算
+  const tagData = useMemo(() => {
+    if (!data?.movieTags) return []
+
+    const tagMap = new Map<string, { name: string; movies: Set<string> }>()
+
+    data.movieTags.forEach((mt) => {
+      if (!mt.tag) return
+      const tagName = mt.tag.name
+      if (!tagMap.has(tagName)) {
+        tagMap.set(tagName, { name: tagName, movies: new Set() })
+      }
+      tagMap.get(tagName)!.movies.add(mt.movie_id)
+    })
+
+    return Array.from(tagMap.values())
+      .map((t) => ({
+        name: t.name,
+        count: t.movies.size,
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10)
+  }, [data?.movieTags])
+
   if (loading) {
     return <div className="text-center py-8">読み込み中...</div>
   }
@@ -155,6 +225,10 @@ export default function AnalyticsPage() {
 
       <div className="space-y-6">
         <MonthlyWatchChart data={monthlyData} />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <CountryChart data={countryData} />
+          <TagChart data={tagData} />
+        </div>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <DirectorChart data={directorData} />
           <CastChart data={castData} />
