@@ -290,8 +290,8 @@ export function MovieRefreshDialog({ movieId, tmdbMovieId, currentData, onRefres
           .eq('movie_id', movieId)
           .eq('role', role)
           .order('cast_order', { ascending: true, nullsFirst: false })
-        console.log('movie_persons after update (sorted by cast_order):', afterLinks?.map(l => ({
-          name: (l.person as any)?.display_name,
+        console.log('movie_persons after update (sorted by cast_order):', (afterLinks as any[])?.map((l: any) => ({
+          name: l.person?.display_name,
           cast_order: l.cast_order,
         })))
       }

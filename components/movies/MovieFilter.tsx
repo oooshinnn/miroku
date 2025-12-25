@@ -4,14 +4,12 @@ import { useState } from 'react'
 import { Search, X, Filter } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { TagBadge } from '@/components/tags/TagBadge'
 import { useTags } from '@/hooks/useTags'
 import type { MovieFilters, SortBy } from '@/hooks/useMovieFilter'
-import type { Tag } from '@/types/tag'
 import type { Person } from '@/types/movie'
 
 const SORT_OPTIONS: { value: SortBy; label: string }[] = [
@@ -26,6 +24,7 @@ interface MovieFilterProps {
   onReset: () => void
   hasActiveFilters: boolean
   persons: Person[]
+  onSearch?: (query: string) => void
 }
 
 export function MovieFilter({
@@ -34,6 +33,7 @@ export function MovieFilter({
   onReset,
   hasActiveFilters,
   persons,
+  onSearch,
 }: MovieFilterProps) {
   const [tagPopoverOpen, setTagPopoverOpen] = useState(false)
   const [personPopoverOpen, setPersonPopoverOpen] = useState(false)
@@ -66,9 +66,15 @@ export function MovieFilter({
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
-                placeholder="タイトルで検索..."
+                placeholder="映画を検索...（Enterで追加）"
                 value={filters.title}
                 onChange={(e) => onFiltersChange({ title: e.target.value })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && filters.title.trim() && onSearch) {
+                    e.preventDefault()
+                    onSearch(filters.title.trim())
+                  }
+                }}
                 className="pl-9"
               />
             </div>

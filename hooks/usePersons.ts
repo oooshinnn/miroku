@@ -96,7 +96,37 @@ export function usePersons() {
   }
 
   const mergePersons = async (sourceId: string, targetId: string) => {
-    // movie_personsのperson_idを更新
+    // ソースとターゲットのmovie_personsを取得
+    const { data: sourceLinks } = await supabase
+      .from('movie_persons')
+      .select('id, movie_id, role')
+      .eq('person_id', sourceId) as { data: { id: string; movie_id: string; role: string }[] | null }
+
+    const { data: targetLinks } = await supabase
+      .from('movie_persons')
+      .select('id, movie_id, role')
+      .eq('person_id', targetId) as { data: { id: string; movie_id: string; role: string }[] | null }
+
+    if (sourceLinks && targetLinks) {
+      // ターゲットに既に存在する (movie_id, role) の組み合わせを特定
+      const targetSet = new Set(
+        targetLinks.map((t) => `${t.movie_id}_${t.role}`)
+      )
+
+      // 重複するソース側のレコードを削除
+      const duplicateIds = sourceLinks
+        .filter((s) => targetSet.has(`${s.movie_id}_${s.role}`))
+        .map((s) => s.id)
+
+      if (duplicateIds.length > 0) {
+        await supabase
+          .from('movie_persons')
+          .delete()
+          .in('id', duplicateIds)
+      }
+    }
+
+    // 残りのmovie_personsのperson_idを更新
     const mpQuery = supabase.from('movie_persons')
     // @ts-expect-error - Supabase type inference issue with update
     const mpResult: any = await mpQuery.update({ person_id: targetId }).eq('person_id', sourceId)

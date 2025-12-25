@@ -120,7 +120,9 @@ export function InlineWatchLogForm({
               disabled={isSubmitting}
               className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                 score === value
-                  ? value === 'good'
+                  ? value === 'pickup'
+                    ? 'bg-purple-500 text-white'
+                    : value === 'good'
                     ? 'bg-green-500 text-white'
                     : value === 'neutral'
                     ? 'bg-yellow-500 text-white'

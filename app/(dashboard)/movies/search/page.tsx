@@ -13,7 +13,7 @@ import type { TMDBMovie } from '@/lib/tmdb/types'
 
 export default function MovieSearchPage() {
   const router = useRouter()
-  const { addMovieQuick, addMovieManually, getAddedTmdbIds } = useMovies()
+  const { addMovieQuick, addMovieManually, getTmdbIdToMovieIdMap } = useMovies()
   const [searchResults, setSearchResults] = useState<TMDBMovie[]>([])
   const [searching, setSearching] = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
@@ -103,7 +103,7 @@ export default function MovieSearchPage() {
             results={searchResults}
             onSelect={handleSelectMovie}
             addingMovieId={addingMovieId}
-            addedTmdbIds={getAddedTmdbIds()}
+            tmdbIdToMovieIdMap={getTmdbIdToMovieIdMap()}
           />
         </div>
       )}

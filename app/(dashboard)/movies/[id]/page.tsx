@@ -165,49 +165,32 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
               <CreditsFetcher movieId={id} tmdbMovieId={movie.tmdb_movie_id} />
             )}
 
-            {directors.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">監督</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <EditablePersonList persons={directors} />
-                </CardContent>
-              </Card>
-            )}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">監督</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <EditablePersonList persons={directors} movieId={id} role="director" />
+              </CardContent>
+            </Card>
 
-            {writers.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">脚本</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <EditablePersonList persons={writers} />
-                </CardContent>
-              </Card>
-            )}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">脚本</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <EditablePersonList persons={writers} movieId={id} role="writer" />
+              </CardContent>
+            </Card>
 
-            {cast.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">キャスト</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* 主演（上位3名） */}
-                  <div>
-                    <p className="text-xs text-slate-500 mb-2">主演</p>
-                    <EditablePersonList persons={cast.slice(0, 3)} />
-                  </div>
-                  {/* その他のキャスト */}
-                  {cast.length > 3 && (
-                    <div>
-                      <p className="text-xs text-slate-500 mb-2">出演</p>
-                      <EditablePersonList persons={cast.slice(3)} maxDisplay={7} />
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">キャスト</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <EditablePersonList persons={cast} movieId={id} role="cast" />
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>

@@ -88,10 +88,9 @@ export function useMovies() {
 
     // 製作国を更新
     if (details.production_countries?.length > 0) {
-      await supabase
-        .from('movies')
-        .update({ tmdb_production_countries: details.production_countries.map(c => c.name) } as any)
-        .eq('id', movieId)
+      const query = supabase.from('movies')
+      // @ts-expect-error - Supabase type inference issue with update
+      await query.update({ tmdb_production_countries: details.production_countries.map(c => c.name) }).eq('id', movieId)
     }
 
     // 監督を保存
@@ -112,10 +111,9 @@ export function useMovies() {
         personId = person.id
         // 既存の人物にprofile_pathがなければ更新
         if (!person.tmdb_profile_path && director.profile_path) {
-          await supabase
-            .from('persons')
-            .update({ tmdb_profile_path: director.profile_path } as any)
-            .eq('id', person.id)
+          const pQuery = supabase.from('persons')
+          // @ts-expect-error - Supabase type inference issue with update
+          await pQuery.update({ tmdb_profile_path: director.profile_path }).eq('id', person.id)
         }
       } else {
         const personData: PersonInsert = {
@@ -162,10 +160,9 @@ export function useMovies() {
         personId = person.id
         // 既存の人物にprofile_pathがなければ更新
         if (!person.tmdb_profile_path && writer.profile_path) {
-          await supabase
-            .from('persons')
-            .update({ tmdb_profile_path: writer.profile_path } as any)
-            .eq('id', person.id)
+          const pQuery = supabase.from('persons')
+          // @ts-expect-error - Supabase type inference issue with update
+          await pQuery.update({ tmdb_profile_path: writer.profile_path }).eq('id', person.id)
         }
       } else {
         const personData: PersonInsert = {
@@ -211,10 +208,9 @@ export function useMovies() {
         personId = person.id
         // 既存の人物にprofile_pathがなければ更新
         if (!person.tmdb_profile_path && cast.profile_path) {
-          await supabase
-            .from('persons')
-            .update({ tmdb_profile_path: cast.profile_path } as any)
-            .eq('id', person.id)
+          const pQuery = supabase.from('persons')
+          // @ts-expect-error - Supabase type inference issue with update
+          await pQuery.update({ tmdb_profile_path: cast.profile_path }).eq('id', person.id)
         }
       } else {
         const personData: PersonInsert = {
@@ -382,6 +378,17 @@ export function useMovies() {
     return ids
   }
 
+  // TMDB IDから映画IDへのマップを取得
+  const getTmdbIdToMovieIdMap = (): Map<number, string> => {
+    const map = new Map<number, string>()
+    movies.forEach((movie) => {
+      if (movie.tmdb_movie_id) {
+        map.set(movie.tmdb_movie_id, movie.id)
+      }
+    })
+    return map
+  }
+
   return {
     movies,
     loading,
@@ -393,6 +400,7 @@ export function useMovies() {
     addTagToMovie,
     removeTagFromMovie,
     getAddedTmdbIds,
+    getTmdbIdToMovieIdMap,
     refetch: fetchMovies,
   }
 }
