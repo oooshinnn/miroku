@@ -19,14 +19,13 @@ export default function MoviesPage() {
   const { movies, loading, filters, updateFilters, resetFilters, hasActiveFilters } =
     useMovieFilter()
   const { persons } = usePersons()
-  const { addMovieQuick, addMovieManually, getTmdbIdToMovieIdMap, refetch } = useMovies()
+  const { addMovieManually, getTmdbIdToMovieIdMap, refetch } = useMovies()
 
   // TMDB検索用の状態
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<TMDBMovie[]>([])
   const [searching, setSearching] = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
-  const [addingMovieId, setAddingMovieId] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [showManualForm, setShowManualForm] = useState(false)
 
@@ -53,20 +52,6 @@ export default function MoviesPage() {
       setSearching(false)
     }
   }, [])
-
-  const handleAddMovie = async (movie: TMDBMovie) => {
-    setAddingMovieId(movie.id)
-    setError(null)
-
-    try {
-      const newMovie = await addMovieQuick(movie)
-      await refetch()
-      router.push(`/movies/${newMovie.id}`)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '映画の追加に失敗しました')
-      setAddingMovieId(null)
-    }
-  }
 
   const handleManualAdd = async (data: { title: string; releaseDate?: string; director?: string }) => {
     setError(null)
@@ -150,8 +135,6 @@ export default function MoviesPage() {
                   key={movie.id}
                   movie={movie}
                   registeredMovieId={tmdbIdToMovieIdMap.get(movie.id)}
-                  isAdding={addingMovieId === movie.id}
-                  onAdd={handleAddMovie}
                 />
               ))}
             </div>

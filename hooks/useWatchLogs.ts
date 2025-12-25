@@ -1,15 +1,21 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import type { WatchLog, WatchLogInsert, WatchLogUpdate, WatchLogWithMovie } from '@/types/watch-log'
+import type { WatchLog, WatchLogInsert, WatchLogUpdate, WatchLogWithMovie, WatchScore } from '@/types/watch-log'
 
-export function useWatchLogs(movieId?: string) {
+interface UseWatchLogsOptions {
+  movieId?: string
+  scoreFilter?: WatchScore | null
+}
+
+export function useWatchLogs(options: UseWatchLogsOptions = {}) {
+  const { movieId, scoreFilter } = options
   const [watchLogs, setWatchLogs] = useState<WatchLogWithMovie[]>([])
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
 
-  const fetchWatchLogs = async () => {
+  const fetchWatchLogs = useCallback(async () => {
     setLoading(true)
 
     let query = supabase
@@ -29,17 +35,21 @@ export function useWatchLogs(movieId?: string) {
       query = query.eq('movie_id', movieId)
     }
 
+    if (scoreFilter) {
+      query = query.eq('score', scoreFilter)
+    }
+
     const { data, error } = await query as { data: WatchLogWithMovie[] | null; error: any }
 
     if (!error && data) {
       setWatchLogs(data)
     }
     setLoading(false)
-  }
+  }, [movieId, scoreFilter])
 
   useEffect(() => {
     fetchWatchLogs()
-  }, [movieId])
+  }, [fetchWatchLogs])
 
   const addWatchLog = async (watchLog: Omit<WatchLogInsert, 'user_id'>) => {
     const {

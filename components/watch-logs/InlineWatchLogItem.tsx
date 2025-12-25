@@ -54,7 +54,8 @@ export function InlineWatchLogItem({ watchLog, onUpdate, onDelete }: InlineWatch
           movie_id: watchLog.movie_id,
           watched_at: watchLog.watched_at,
           watch_method: watchLog.watch_method as WatchMethod,
-          score: watchLog.score as WatchScore | undefined,
+          // pickupは廃止されたのでundefinedとして扱う
+          score: watchLog.score && watchLog.score !== 'pickup' ? watchLog.score as WatchScore : undefined,
           memo: watchLog.memo || '',
         }}
         onSubmit={handleUpdate}
@@ -75,7 +76,7 @@ export function InlineWatchLogItem({ watchLog, onUpdate, onDelete }: InlineWatch
           <span className="text-slate-600 text-sm">
             {WATCH_METHOD_LABELS[watchLog.watch_method]}
           </span>
-          {watchLog.score && (
+          {watchLog.score && watchLog.score !== 'pickup' && (
             <Badge className={`${WATCH_SCORE_COLORS[watchLog.score]} text-xs`}>
               {WATCH_SCORE_LABELS[watchLog.score]}
             </Badge>

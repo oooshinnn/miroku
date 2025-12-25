@@ -3,17 +3,14 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { Check } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import type { TMDBMovie } from '@/lib/tmdb/types'
 
 interface MovieSearchResultsProps {
   results: TMDBMovie[]
-  onSelect: (movie: TMDBMovie) => void
-  addingMovieId: number | null
   tmdbIdToMovieIdMap: Map<number, string>
 }
 
-export function MovieSearchResults({ results, onSelect, addingMovieId, tmdbIdToMovieIdMap }: MovieSearchResultsProps) {
+export function MovieSearchResults({ results, tmdbIdToMovieIdMap }: MovieSearchResultsProps) {
   const IMAGE_BASE_URL = process.env.NEXT_PUBLIC_TMDB_IMAGE_BASE_URL || 'https://image.tmdb.org/t/p/w500'
 
   if (results.length === 0) {
@@ -30,9 +27,18 @@ export function MovieSearchResults({ results, onSelect, addingMovieId, tmdbIdToM
         const existingMovieId = tmdbIdToMovieIdMap.get(movie.id)
         const isAdded = !!existingMovieId
 
+        // 追加済みなら既存の詳細ページへ、未追加ならTMDBプレビューページへ
+        const href = isAdded
+          ? `/movies/${existingMovieId}`
+          : `/movies/tmdb/${movie.id}`
+
         return (
-          <div key={movie.id} className="space-y-2">
-            <div className="relative aspect-[2/3] bg-slate-200 rounded-lg overflow-hidden">
+          <Link
+            key={movie.id}
+            href={href}
+            className="block space-y-2 group"
+          >
+            <div className="relative aspect-[2/3] bg-slate-200 rounded-lg overflow-hidden group-hover:ring-2 group-hover:ring-slate-400 transition-all">
               {movie.poster_path ? (
                 <Image
                   src={`${IMAGE_BASE_URL}${movie.poster_path}`}
@@ -47,38 +53,21 @@ export function MovieSearchResults({ results, onSelect, addingMovieId, tmdbIdToM
                   画像なし
                 </div>
               )}
+              {isAdded && (
+                <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full p-1">
+                  <Check className="h-3 w-3" />
+                </div>
+              )}
             </div>
             <div className="px-1">
-              <h3 className="font-medium text-slate-900 line-clamp-2 text-sm leading-tight">
+              <h3 className="font-medium text-slate-900 line-clamp-2 text-sm leading-tight group-hover:text-slate-700">
                 {movie.title}
               </h3>
               <p className="text-xs text-slate-500 mt-1">
                 {movie.release_date ? new Date(movie.release_date).getFullYear() : '年不明'}
               </p>
             </div>
-            {isAdded ? (
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full"
-                asChild
-              >
-                <Link href={`/movies/${existingMovieId}`}>
-                  <Check className="h-4 w-4 mr-1" />
-                  登録済み
-                </Link>
-              </Button>
-            ) : (
-              <Button
-                onClick={() => onSelect(movie)}
-                disabled={addingMovieId === movie.id}
-                size="sm"
-                className="w-full"
-              >
-                {addingMovieId === movie.id ? '追加中...' : '追加'}
-              </Button>
-            )}
-          </div>
+          </Link>
         )
       })}
     </div>

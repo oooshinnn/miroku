@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import type { Movie } from '@/types/movie'
-import type { Tag } from '@/types/tag'
+import type { MovieWithExtras, WatchScore } from '@/types/movie'
 
 export type SortBy = 'watched_at' | 'release_date' | 'created_at'
 
@@ -25,9 +24,16 @@ const defaultFilters: MovieFilters = {
   sortBy: 'watched_at',
 }
 
+// スコアの優先順位（高い方が良い評価）
+const scoreOrder: Record<WatchScore, number> = {
+  bad: 0,
+  neutral: 1,
+  good: 2,
+}
+
 export function useMovieFilter() {
   const [filters, setFilters] = useState<MovieFilters>(defaultFilters)
-  const [movies, setMovies] = useState<Movie[]>([])
+  const [movies, setMovies] = useState<MovieWithExtras[]>([])
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
 
@@ -57,7 +63,7 @@ export function useMovieFilter() {
         query = query.or(`tmdb_release_date.lte.${yearEnd},custom_release_date.lte.${yearEnd}`)
       }
 
-      const { data: allMovies, error } = (await query) as { data: Movie[] | null; error: any }
+      const { data: allMovies, error } = (await query) as { data: MovieWithExtras[] | null; error: any }
 
       if (error) {
         console.error('Failed to fetch movies:', error)
@@ -66,7 +72,7 @@ export function useMovieFilter() {
         return
       }
 
-      let filteredMovies: Movie[] = allMovies || []
+      let filteredMovies: MovieWithExtras[] = allMovies || []
 
       // Tag filter - need to fetch movie_tags separately
       if (filters.tagIds.length > 0) {
@@ -136,6 +142,59 @@ export function useMovieFilter() {
         })
       }
       // 'created_at' is already sorted by the query
+
+      // 映画IDリストを取得
+      const movieIds = filteredMovies.map(m => m.id)
+
+      if (movieIds.length > 0) {
+        // タグを取得
+        const { data: movieTagsData } = await supabase
+          .from('movie_tags')
+          .select(`
+            movie_id,
+            tag:tags(id, name, color)
+          `)
+          .in('movie_id', movieIds)
+
+        // 映画ごとのタグをマップ化
+        const movieTagsMap = new Map<string, { id: string; name: string; color: string | null }[]>()
+        if (movieTagsData) {
+          for (const mt of movieTagsData as any[]) {
+            if (mt.tag) {
+              const tags = movieTagsMap.get(mt.movie_id) || []
+              tags.push(mt.tag)
+              movieTagsMap.set(mt.movie_id, tags)
+            }
+          }
+        }
+
+        // 最高評価を取得
+        const { data: watchLogsData } = await supabase
+          .from('watch_logs')
+          .select('movie_id, score')
+          .in('movie_id', movieIds)
+          .not('score', 'is', null)
+
+        // 映画ごとの最高評価をマップ化
+        const bestScoreMap = new Map<string, WatchScore>()
+        if (watchLogsData) {
+          for (const log of watchLogsData as any[]) {
+            if (log.score) {
+              const currentBest = bestScoreMap.get(log.movie_id)
+              if (!currentBest || scoreOrder[log.score as WatchScore] > scoreOrder[currentBest]) {
+                bestScoreMap.set(log.movie_id, log.score as WatchScore)
+              }
+            }
+          }
+        }
+
+        // 映画にタグと評価を付与
+        filteredMovies = filteredMovies.map(movie => ({
+          ...movie,
+          tags: movieTagsMap.get(movie.id) || [],
+          bestScore: bestScoreMap.get(movie.id) || null,
+        }))
+      }
 
       setMovies(filteredMovies)
     } catch (error) {

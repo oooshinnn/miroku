@@ -17,3 +17,10 @@ export interface MovieWithDetails extends Movie {
     cast_order: number | null
   }[]
 }
+
+export type WatchScore = 'bad' | 'neutral' | 'good'
+
+export interface MovieWithExtras extends Movie {
+  tags?: { id: string; name: string; color: string | null }[]
+  bestScore?: WatchScore | null
+}

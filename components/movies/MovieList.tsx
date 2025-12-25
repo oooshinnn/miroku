@@ -1,10 +1,10 @@
 'use client'
 
 import { MovieCard } from './MovieCard'
-import type { Movie } from '@/types/movie'
+import type { MovieWithExtras } from '@/types/movie'
 
 interface MovieListProps {
-  movies: Movie[]
+  movies: MovieWithExtras[]
 }
 
 export function MovieList({ movies }: MovieListProps) {

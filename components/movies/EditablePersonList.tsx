@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Edit2, Check, X, Plus } from 'lucide-react'
+import Link from 'next/link'
+import { Check, X, Plus } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
@@ -21,8 +22,6 @@ interface EditablePersonListProps {
 }
 
 export function EditablePersonList({ persons, maxDisplay, movieId, role, onPersonAdded }: EditablePersonListProps) {
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [editName, setEditName] = useState('')
   const [saving, setSaving] = useState(false)
   const [personList, setPersonList] = useState(persons)
   const [isAdding, setIsAdding] = useState(false)
@@ -31,52 +30,6 @@ export function EditablePersonList({ persons, maxDisplay, movieId, role, onPerso
 
   const displayedPersons = maxDisplay ? personList.slice(0, maxDisplay) : personList
   const remainingCount = maxDisplay ? Math.max(0, personList.length - maxDisplay) : 0
-
-  const handleStartEdit = (person: PersonData) => {
-    setEditingId(person.personId)
-    setEditName(person.displayName)
-  }
-
-  const handleSave = async () => {
-    if (!editingId || !editName.trim()) return
-
-    setSaving(true)
-    try {
-      const query = supabase.from('persons')
-      // @ts-expect-error - Supabase type inference issue with update
-      const result: any = await query.update({ display_name: editName.trim() }).eq('id', editingId)
-      const { error } = result as { error: any }
-
-      if (error) throw error
-
-      // ローカル状態を更新
-      setPersonList(prev =>
-        prev.map(p =>
-          p.personId === editingId ? { ...p, displayName: editName.trim() } : p
-        )
-      )
-      setEditingId(null)
-      setEditName('')
-    } catch (error) {
-      console.error('Failed to update person name:', error)
-      alert('名前の更新に失敗しました')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const handleCancel = () => {
-    setEditingId(null)
-    setEditName('')
-  }
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSave()
-    } else if (e.key === 'Escape') {
-      handleCancel()
-    }
-  }
 
   const handleAddPerson = async () => {
     if (!newName.trim() || !movieId || !role) return
@@ -156,67 +109,28 @@ export function EditablePersonList({ persons, maxDisplay, movieId, role, onPerso
   const canAdd = !!movieId && !!role
 
   return (
-    <div className="space-y-2">
+    <div className="flex flex-wrap items-center gap-1.5">
       {personList.length === 0 && !canAdd && (
-        <span className="text-slate-500">-</span>
+        <span className="text-slate-500 text-sm">-</span>
       )}
 
-      {personList.length > 0 && (
-        <div className="flex flex-wrap gap-x-1 gap-y-1">
-          {displayedPersons.map((person, index) => (
-            <span key={person.id} className="inline-flex items-center">
-              {editingId === person.personId ? (
-                <span className="inline-flex items-center gap-1">
-                  <Input
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    className="h-7 w-40 text-sm"
-                    autoFocus
-                    disabled={saving}
-                  />
-                  <button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="p-1 text-green-600 hover:text-green-700 disabled:opacity-50"
-                  >
-                    <Check className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={handleCancel}
-                    disabled={saving}
-                    className="p-1 text-slate-500 hover:text-slate-700"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </span>
-              ) : (
-                <span className="group inline-flex items-center">
-                  <span className="text-slate-700">{person.displayName}</span>
-                  <button
-                    onClick={() => handleStartEdit(person)}
-                    className="ml-1 p-0.5 text-slate-400 opacity-0 group-hover:opacity-100 hover:text-slate-600 transition-opacity"
-                    title="名前を編集"
-                  >
-                    <Edit2 className="h-3 w-3" />
-                  </button>
-                  {index < displayedPersons.length - 1 && (
-                    <span className="text-slate-400 mr-1">,</span>
-                  )}
-                </span>
-              )}
-            </span>
-          ))}
-        </div>
-      )}
+      {displayedPersons.map((person) => (
+        <Link
+          key={person.id}
+          href={`/persons/${person.personId}`}
+          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
+        >
+          {person.displayName}
+        </Link>
+      ))}
 
       {remainingCount > 0 && (
-        <p className="text-slate-500 text-sm">他 {remainingCount} 名</p>
+        <span className="text-slate-500 text-xs">他 {remainingCount} 名</span>
       )}
 
       {/* 追加フォーム */}
       {canAdd && (
-        <div className="pt-1">
+        <>
           {isAdding ? (
             <div className="inline-flex items-center gap-1">
               <Input
@@ -224,23 +138,23 @@ export function EditablePersonList({ persons, maxDisplay, movieId, role, onPerso
                 onChange={(e) => setNewName(e.target.value)}
                 onKeyDown={handleAddKeyDown}
                 placeholder="名前を入力"
-                className="h-7 w-40 text-sm"
+                className="h-6 w-32 text-xs"
                 autoFocus
                 disabled={saving}
               />
               <button
                 onClick={handleAddPerson}
                 disabled={saving || !newName.trim()}
-                className="p-1 text-green-600 hover:text-green-700 disabled:opacity-50"
+                className="p-0.5 text-green-600 hover:text-green-700 disabled:opacity-50"
               >
-                <Check className="h-4 w-4" />
+                <Check className="h-3.5 w-3.5" />
               </button>
               <button
                 onClick={() => { setIsAdding(false); setNewName('') }}
                 disabled={saving}
-                className="p-1 text-slate-500 hover:text-slate-700"
+                className="p-0.5 text-slate-500 hover:text-slate-700"
               >
-                <X className="h-4 w-4" />
+                <X className="h-3.5 w-3.5" />
               </button>
             </div>
           ) : (
@@ -248,13 +162,12 @@ export function EditablePersonList({ persons, maxDisplay, movieId, role, onPerso
               variant="ghost"
               size="sm"
               onClick={() => setIsAdding(true)}
-              className="h-7 px-2 text-xs text-slate-500 hover:text-slate-700"
+              className="h-5 px-1.5 text-xs text-slate-400 hover:text-slate-600"
             >
-              <Plus className="h-3 w-3 mr-1" />
-              追加
+              <Plus className="h-3 w-3" />
             </Button>
           )}
-        </div>
+        </>
       )}
     </div>
   )

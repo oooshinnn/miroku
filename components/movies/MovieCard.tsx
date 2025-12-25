@@ -2,10 +2,17 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import type { Movie } from '@/types/movie'
+import { ThumbsUp, Minus, ThumbsDown } from 'lucide-react'
+import type { MovieWithExtras, WatchScore } from '@/types/movie'
 
 interface MovieCardProps {
-  movie: Movie
+  movie: MovieWithExtras
+}
+
+const scoreConfig: Record<WatchScore, { icon: React.ReactNode; color: string; label: string }> = {
+  good: { icon: <ThumbsUp className="h-3 w-3" />, color: 'text-green-500', label: 'Good' },
+  neutral: { icon: <Minus className="h-3 w-3" />, color: 'text-slate-400', label: 'Neutral' },
+  bad: { icon: <ThumbsDown className="h-3 w-3" />, color: 'text-red-400', label: 'Bad' },
 }
 
 export function MovieCard({ movie }: MovieCardProps) {
@@ -35,6 +42,12 @@ export function MovieCard({ movie }: MovieCardProps) {
             画像なし
           </div>
         )}
+        {/* 評価バッジ */}
+        {movie.bestScore && (
+          <div className={`absolute top-1 right-1 flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-white/90 ${scoreConfig[movie.bestScore].color}`}>
+            {scoreConfig[movie.bestScore].icon}
+          </div>
+        )}
       </div>
 
       {/* タイトル */}
@@ -44,12 +57,28 @@ export function MovieCard({ movie }: MovieCardProps) {
         </h3>
       </div>
 
-      {/* メタ情報 */}
-      <div className="px-2 pb-2 pt-1">
+      {/* メタ情報 + タグ */}
+      <div className="px-2 pb-2 pt-1 space-y-1">
         <p className="text-xs text-slate-500">
           {releaseDate ? new Date(releaseDate).getFullYear() : '年不明'}
           {movie.watch_count > 0 && ` • ${movie.watch_count}回`}
         </p>
+        {movie.tags && movie.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {movie.tags.slice(0, 3).map((tag) => (
+              <span
+                key={tag.id}
+                className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600 truncate max-w-[80px]"
+                style={tag.color ? { backgroundColor: `${tag.color}20`, color: tag.color } : undefined}
+              >
+                {tag.name}
+              </span>
+            ))}
+            {movie.tags.length > 3 && (
+              <span className="text-[10px] px-1 text-slate-400">+{movie.tags.length - 3}</span>
+            )}
+          </div>
+        )}
       </div>
     </Link>
   )

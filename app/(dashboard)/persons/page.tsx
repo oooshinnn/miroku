@@ -1,13 +1,25 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import Image from 'next/image'
-import { Search, Edit2, GitMerge, Check, X, User } from 'lucide-react'
+import Link from 'next/link'
+import { Search, Edit2, GitMerge, Check, X, User, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import { usePersons, type PersonWithStats } from '@/hooks/usePersons'
 
 const IMAGE_BASE_URL = process.env.NEXT_PUBLIC_TMDB_IMAGE_BASE_URL || 'https://image.tmdb.org/t/p/w500'
@@ -19,7 +31,7 @@ const roleLabels: Record<string, string> = {
 }
 
 export default function PersonsPage() {
-  const { personsWithStats, loading, updatePerson, mergePersons, refetch } = usePersons()
+  const { personsWithStats, loading, updatePerson, mergePersons, deleteUnusedPersons, refetch } = usePersons()
   const [searchQuery, setSearchQuery] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
@@ -27,6 +39,12 @@ export default function PersonsPage() {
   const [mergeSource, setMergeSource] = useState<PersonWithStats | null>(null)
   const [mergeTarget, setMergeTarget] = useState<PersonWithStats | null>(null)
   const [isMerging, setIsMerging] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+
+  // 作品が0の人物の数
+  const unusedPersonsCount = useMemo(() => {
+    return personsWithStats.filter((p) => p.movie_count === 0).length
+  }, [personsWithStats])
 
   const filteredPersons = personsWithStats.filter((person) =>
     person.display_name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -82,6 +100,21 @@ export default function PersonsPage() {
     (p) => mergeSource && p.id !== mergeSource.id
   )
 
+  const handleDeleteUnused = async () => {
+    setIsDeleting(true)
+    try {
+      const deletedCount = await deleteUnusedPersons()
+      if (deletedCount > 0) {
+        alert(`${deletedCount} 人の未使用データを削除しました`)
+      }
+    } catch (error) {
+      console.error('Failed to delete unused persons:', error)
+      alert('削除に失敗しました')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -100,15 +133,46 @@ export default function PersonsPage() {
         </p>
       </div>
 
-      {/* 検索 */}
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-        <Input
-          placeholder="名前で検索..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-9"
-        />
+      {/* 検索とアクション */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="relative max-w-md flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+          <Input
+            placeholder="名前で検索..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        {unusedPersonsCount > 0 && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                <Trash2 className="h-4 w-4 mr-1" />
+                未使用を削除 ({unusedPersonsCount})
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>未使用の人物データを削除しますか？</AlertDialogTitle>
+                <AlertDialogDescription>
+                  どの映画にも関連付けられていない {unusedPersonsCount} 人のデータを削除します。
+                  この操作は取り消せません。
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>キャンセル</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDeleteUnused}
+                  disabled={isDeleting}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {isDeleting ? '削除中...' : '削除'}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
       </div>
 
       {/* 人物一覧 */}
@@ -174,9 +238,12 @@ export default function PersonsPage() {
                     ) : (
                       <>
                         <div>
-                          <span className="font-medium text-slate-900">
+                          <Link
+                            href={`/persons/${person.id}`}
+                            className="font-medium text-slate-900 hover:text-blue-600 transition-colors"
+                          >
                             {person.display_name}
-                          </span>
+                          </Link>
                           <div className="flex gap-2 mt-1">
                             {person.roles.map((role) => (
                               <Badge key={role} variant="secondary" className="text-xs">
@@ -185,9 +252,12 @@ export default function PersonsPage() {
                             ))}
                           </div>
                         </div>
-                        <span className="text-sm text-slate-500">
+                        <Link
+                          href={`/persons/${person.id}`}
+                          className="text-sm text-slate-500 hover:text-blue-600 transition-colors"
+                        >
                           {person.movie_count} 作品
-                        </span>
+                        </Link>
                       </>
                     )}
                   </div>

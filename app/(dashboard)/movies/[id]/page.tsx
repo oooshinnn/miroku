@@ -3,12 +3,12 @@ import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import { MovieDetailClient } from './MovieDetailClient'
 import { MovieActions } from './MovieActions'
-import { CreditsFetcher } from './CreditsFetcher'
+import { MovieCreditsSection } from './MovieCreditsSection'
+import { MovieOverview } from './MovieOverview'
 import { MovieTagSelector } from '@/components/movies/MovieTagSelector'
-import { EditablePersonList } from '@/components/movies/EditablePersonList'
 
 interface MovieDetailPageProps {
   params: Promise<{ id: string }>
@@ -18,22 +18,10 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
   const { id } = await params
   const supabase = await createClient()
 
-  // 映画情報を取得
+  // 映画情報を取得（スタッフ・キャスト情報はクライアントコンポーネントで取得）
   const { data: movie, error } = (await supabase
     .from('movies')
-    .select(`
-      *,
-      movie_persons(
-        id,
-        role,
-        cast_order,
-        person:persons(
-          id,
-          display_name,
-          tmdb_person_id
-        )
-      )
-    `)
+    .select('*')
     .eq('id', id)
     .single()) as { data: any; error: any }
 
@@ -47,64 +35,15 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
   const releaseDate = movie.custom_release_date || movie.tmdb_release_date
   const productionCountries = movie.custom_production_countries || movie.tmdb_production_countries || []
 
-  // 監督、脚本、キャストを分類（ID付き）
-  const directors = movie.movie_persons
-    ?.filter((mp: any) => mp.role === 'director')
-    .map((mp: any) => ({
-      id: mp.id,
-      personId: mp.person.id,
-      displayName: mp.person.display_name,
-      tmdbPersonId: mp.person.tmdb_person_id,
-    })) || []
-
-  const writers = movie.movie_persons
-    ?.filter((mp: any) => mp.role === 'writer')
-    .map((mp: any) => ({
-      id: mp.id,
-      personId: mp.person.id,
-      displayName: mp.person.display_name,
-      tmdbPersonId: mp.person.tmdb_person_id,
-    })) || []
-
-  const cast = movie.movie_persons
-    ?.filter((mp: any) => mp.role === 'cast')
-    .sort((a: any, b: any) => (a.cast_order || 999) - (b.cast_order || 999))
-    .map((mp: any) => ({
-      id: mp.id,
-      personId: mp.person.id,
-      displayName: mp.person.display_name,
-      tmdbPersonId: mp.person.tmdb_person_id,
-      castOrder: mp.cast_order,
-    })) || []
-
-  // クレジット情報がまだ取得されていないか判定
-  const hasNoCredits = movie.tmdb_movie_id && (movie.movie_persons?.length || 0) === 0
-
-  // MovieActions用のデータ（比較用）
+  // MovieActions用のデータ（比較用）- クライアントで取得するため空で初期化
   const currentDataForRefresh = {
     title: movie.tmdb_title,
     releaseDate: movie.tmdb_release_date,
     productionCountries: movie.tmdb_production_countries || [],
     posterPath: movie.tmdb_poster_path,
-    directors: directors.map((d: any) => ({
-      id: d.id,
-      personId: d.personId,
-      name: d.displayName,
-      tmdbId: d.tmdbPersonId,
-    })),
-    writers: writers.map((w: any) => ({
-      id: w.id,
-      personId: w.personId,
-      name: w.displayName,
-      tmdbId: w.tmdbPersonId,
-    })),
-    cast: cast.map((c: any) => ({
-      id: c.id,
-      personId: c.personId,
-      name: c.displayName,
-      tmdbId: c.tmdbPersonId,
-      order: c.castOrder || 0,
-    })),
+    directors: [],
+    writers: [],
+    cast: [],
   }
 
   return (
@@ -158,45 +97,19 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
             <MovieTagSelector movieId={id} />
           </div>
 
-          {/* スタッフ・キャスト */}
-          <div className="space-y-4">
-            {/* クレジット情報がない場合はバックグラウンドで取得 */}
-            {hasNoCredits && (
-              <CreditsFetcher movieId={id} tmdbMovieId={movie.tmdb_movie_id} />
-            )}
+          {/* あらすじ */}
+          <MovieOverview tmdbMovieId={movie.tmdb_movie_id} />
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">監督</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <EditablePersonList persons={directors} movieId={id} role="director" />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">脚本</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <EditablePersonList persons={writers} movieId={id} role="writer" />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">キャスト</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <EditablePersonList persons={cast} movieId={id} role="cast" />
-              </CardContent>
-            </Card>
-          </div>
+          {/* スタッフ・キャスト（クライアントコンポーネント） */}
+          <MovieCreditsSection
+            movieId={id}
+            tmdbMovieId={movie.tmdb_movie_id}
+          />
         </div>
       </div>
 
       {/* 視聴ログセクション */}
-      <MovieDetailClient movieId={id} initialWatchCount={movie.watch_count} />
+      <MovieDetailClient movieId={id} />
     </div>
   )
 }

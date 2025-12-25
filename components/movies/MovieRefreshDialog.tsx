@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { RefreshCw, Check, ArrowRight } from 'lucide-react'
+import { RefreshCw, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -23,9 +23,9 @@ interface NewData {
   releaseDate: string | null
   productionCountries: string[]
   posterPath: string | null
-  directors: { id: number; name: string; displayName: string }[]
-  writers: { id: number; name: string; displayName: string }[]
-  cast: { id: number; name: string; displayName: string; order: number }[]
+  directors: { id: number; name: string }[]
+  writers: { id: number; name: string }[]
+  cast: { id: number; name: string; order: number }[]
 }
 
 interface MovieRefreshDialogProps {
@@ -68,7 +68,6 @@ export function MovieRefreshDialog({ movieId, tmdbMovieId, currentData, onRefres
         .map(d => ({
           id: d.id,
           name: d.name,
-          displayName: d.display_name || d.name,
         }))
 
       const writers = credits.crew
@@ -77,13 +76,11 @@ export function MovieRefreshDialog({ movieId, tmdbMovieId, currentData, onRefres
         .map(w => ({
           id: w.id,
           name: w.name,
-          displayName: w.display_name || w.name,
         }))
 
-      const cast = credits.cast.slice(0, 3).map(c => ({
+      const cast = credits.cast.slice(0, 5).map(c => ({
         id: c.id,
         name: c.name,
-        displayName: c.display_name || c.name,
         order: c.order,
       }))
 
@@ -138,78 +135,38 @@ export function MovieRefreshDialog({ movieId, tmdbMovieId, currentData, onRefres
       }
 
       if (Object.keys(movieUpdates).length > 0) {
-        console.log('Updating movie with:', movieUpdates)
-        console.log('Movie ID:', movieId)
-        console.log('User ID:', user.id)
-
-        // 更新前のデータを確認
-        const { data: beforeMovie } = await supabase
-          .from('movies')
-          .select('id, user_id, tmdb_title, tmdb_release_date')
-          .eq('id', movieId)
-          .single()
-        console.log('Before update:', beforeMovie)
-
         const updateQuery = supabase.from('movies')
         // @ts-expect-error - Supabase type inference issue with update
         const updateResult: any = await updateQuery.update(movieUpdates).eq('id', movieId).select()
         const { data: updatedData, error: movieError } = updateResult
 
-        console.log('Update result - data:', updatedData, 'error:', movieError)
-
         if (movieError) {
-          console.error('Movie update error:', movieError)
           throw new Error(`映画情報の更新に失敗: ${movieError.message}`)
         }
 
         if (!updatedData || updatedData.length === 0) {
-          console.error('No rows updated! Check RLS policies.')
           throw new Error('更新対象が見つかりません（権限エラーの可能性）')
         }
-
-        // 更新後のデータを確認
-        const { data: afterMovie } = await supabase
-          .from('movies')
-          .select('id, tmdb_title, tmdb_release_date')
-          .eq('id', movieId)
-          .single()
-        console.log('After update:', afterMovie)
       }
 
       // 人物情報を更新
       const updatePersons = async (
         role: 'director' | 'writer' | 'cast',
-        newPersons: { id: number; name: string; displayName: string; order?: number }[]
+        newPersons: { id: number; name: string; order?: number }[]
       ) => {
-        console.log(`=== Updating ${role} ===`)
-        console.log('New persons to add:', newPersons.map(p => ({ tmdbId: p.id, name: p.name, displayName: p.displayName })))
-
-        // 既存のmovie_personsを確認
-        const { data: existingLinks } = await supabase
-          .from('movie_persons')
-          .select('id, person_id, role')
-          .eq('movie_id', movieId)
-          .eq('role', role)
-        console.log('Existing movie_persons before delete:', existingLinks)
-
         // 既存のmovie_personsを削除
-        const { error: deleteError, count: deleteCount } = await supabase
+        const { error: deleteError } = await supabase
           .from('movie_persons')
           .delete()
           .eq('movie_id', movieId)
           .eq('role', role)
 
-        console.log('Delete result - error:', deleteError, 'count:', deleteCount)
-
         if (deleteError) {
-          console.error('Delete movie_persons error:', deleteError)
           throw new Error(`既存データの削除に失敗: ${deleteError.message}`)
         }
 
         // 新しい人物を追加
         for (const person of newPersons) {
-          console.log(`Processing person: ${person.displayName} (TMDB ID: ${person.id})`)
-
           // 既存の人物を検索（TMDB IDで）
           const { data: existingPerson, error: findError } = (await supabase
             .from('persons')
@@ -218,10 +175,7 @@ export function MovieRefreshDialog({ movieId, tmdbMovieId, currentData, onRefres
             .eq('tmdb_person_id', person.id)
             .maybeSingle()) as { data: { id: string; display_name: string } | null; error: any }
 
-          console.log('Find existing person result:', existingPerson, 'error:', findError)
-
           if (findError) {
-            console.error('Find person error:', findError)
             continue
           }
 
@@ -229,44 +183,32 @@ export function MovieRefreshDialog({ movieId, tmdbMovieId, currentData, onRefres
 
           if (existingPerson) {
             personId = existingPerson.id
-            console.log(`Found existing person: ${existingPerson.id}, current name: ${existingPerson.display_name}`)
 
-            // 表示名を更新（日本語名が取得できた場合）
-            if (person.displayName !== existingPerson.display_name) {
-              console.log(`Updating display_name from "${existingPerson.display_name}" to "${person.displayName}"`)
+            // 表示名を更新（名前が変わった場合）
+            if (person.name !== existingPerson.display_name) {
               const personQuery = supabase.from('persons')
               // @ts-expect-error - Supabase type inference issue with update
-              const updateResult: any = await personQuery.update({ display_name: person.displayName }).eq('id', personId).select()
-              console.log('Person update result:', updateResult)
-
-              if (updateResult?.error) {
-                console.error('Update person error:', updateResult.error)
-              }
+              await personQuery.update({ display_name: person.name }).eq('id', personId)
             }
           } else {
-            console.log(`Creating new person: ${person.displayName}`)
             const { data: newPerson, error: insertError } = (await supabase
               .from('persons')
               .insert({
                 user_id: user.id,
                 tmdb_person_id: person.id,
-                display_name: person.displayName,
+                display_name: person.name,
               } as any)
               .select('id')
               .single()) as { data: { id: string } | null; error: any }
 
-            console.log('Insert person result:', newPerson, 'error:', insertError)
-
             if (insertError || !newPerson) {
-              console.error('Insert person error:', insertError)
               continue
             }
             personId = newPerson.id
           }
 
           const castOrder = role === 'cast' ? person.order : null
-          console.log(`Creating movie_persons link: movie=${movieId}, person=${personId}, role=${role}, cast_order=${castOrder}`)
-          const { data: linkData, error: linkError } = await supabase
+          await supabase
             .from('movie_persons')
             .insert({
               movie_id: movieId,
@@ -274,50 +216,22 @@ export function MovieRefreshDialog({ movieId, tmdbMovieId, currentData, onRefres
               role,
               cast_order: castOrder,
             } as any)
-            .select()
-
-          console.log('Insert movie_persons result:', linkData, 'error:', linkError)
-
-          if (linkError) {
-            console.error('Insert movie_persons error:', linkError)
-          }
         }
-
-        // 更新後の確認
-        const { data: afterLinks } = await supabase
-          .from('movie_persons')
-          .select('id, person_id, role, cast_order, person:persons(display_name)')
-          .eq('movie_id', movieId)
-          .eq('role', role)
-          .order('cast_order', { ascending: true, nullsFirst: false })
-        console.log('movie_persons after update (sorted by cast_order):', (afterLinks as any[])?.map((l: any) => ({
-          name: l.person?.display_name,
-          cast_order: l.cast_order,
-        })))
       }
 
       if (selectedFields.has('directors')) {
-        console.log('Updating directors...')
         await updatePersons('director', newData.directors)
-        console.log('Directors updated')
       }
       if (selectedFields.has('writers')) {
-        console.log('Updating writers...')
         await updatePersons('writer', newData.writers)
-        console.log('Writers updated')
       }
       if (selectedFields.has('cast')) {
-        console.log('Updating cast...')
         await updatePersons('cast', newData.cast)
-        console.log('Cast updated')
       }
 
-      console.log('All updates completed successfully!')
-      alert('更新が完了しました。ページをリロードします。')
       setOpen(false)
       onRefreshComplete()
     } catch (err) {
-      console.error('handleApply error:', err)
       setError(err instanceof Error ? err.message : '更新に失敗しました')
     } finally {
       setSaving(false)
@@ -336,51 +250,22 @@ export function MovieRefreshDialog({ movieId, tmdbMovieId, currentData, onRefres
         return JSON.stringify(currentData.productionCountries) !== JSON.stringify(newData.productionCountries)
       case 'directors': {
         const currentNames = currentData.directors.map(d => d.name).sort()
-        const newNames = newData.directors.map(d => d.displayName).sort()
-        const isDiff = JSON.stringify(currentNames) !== JSON.stringify(newNames)
-        console.log('Directors comparison:', {
-          isDiff,
-          current: currentNames,
-          new: newNames,
-        })
-        return isDiff
+        const newNames = newData.directors.map(d => d.name).sort()
+        return JSON.stringify(currentNames) !== JSON.stringify(newNames)
       }
       case 'writers': {
         const currentNames = currentData.writers.map(w => w.name).sort()
-        const newNames = newData.writers.map(w => w.displayName).sort()
-        const isDiff = JSON.stringify(currentNames) !== JSON.stringify(newNames)
-        console.log('Writers comparison:', {
-          isDiff,
-          current: currentNames,
-          new: newNames,
-        })
-        return isDiff
+        const newNames = newData.writers.map(w => w.name).sort()
+        return JSON.stringify(currentNames) !== JSON.stringify(newNames)
       }
       case 'cast': {
         const currentNames = currentData.cast.map(c => c.name).sort()
-        const newNames = newData.cast.map(c => c.displayName).sort()
+        const newNames = newData.cast.map(c => c.name).sort()
         const isDiff = JSON.stringify(currentNames) !== JSON.stringify(newNames)
-
-        // 常にログを出力して比較内容を確認
-        const addedNames = newNames.filter(n => !currentNames.includes(n))
-        const removedNames = currentNames.filter(n => !newNames.includes(n))
-        console.log('Cast comparison:', {
-          isDiff,
-          currentCount: currentNames.length,
-          newCount: newNames.length,
-          addedNames,
-          removedNames,
-          // 順序の違いも確認（最初の10人）
-          currentFirst10: currentData.cast.slice(0, 10).map(c => c.name),
-          newFirst10: newData.cast.slice(0, 10).map(c => c.displayName),
-        })
 
         // 順序が違う場合も変更ありとする（cast_orderの更新が必要）
         const orderDiff = JSON.stringify(currentData.cast.map(c => c.name)) !==
-                          JSON.stringify(newData.cast.map(c => c.displayName))
-        if (orderDiff && !isDiff) {
-          console.log('Cast order changed (names are same but order is different)')
-        }
+                          JSON.stringify(newData.cast.map(c => c.name))
 
         return isDiff || orderDiff
       }
@@ -434,7 +319,7 @@ export function MovieRefreshDialog({ movieId, tmdbMovieId, currentData, onRefres
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
           <RefreshCw className="h-4 w-4 mr-1" />
-          TMDBから再取得
+          データベースから再取得
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
@@ -490,19 +375,19 @@ export function MovieRefreshDialog({ movieId, tmdbMovieId, currentData, onRefres
               label={`監督 (${currentData.directors.length}名 → ${newData.directors.length}名)`}
               field="directors"
               currentValue={currentData.directors.map(d => d.name).join(', ')}
-              newValue={newData.directors.map(d => d.displayName).join(', ')}
+              newValue={newData.directors.map(d => d.name).join(', ')}
             />
             <ComparisonRow
               label={`脚本 (${currentData.writers.length}名 → ${newData.writers.length}名)`}
               field="writers"
               currentValue={currentData.writers.map(w => w.name).join(', ')}
-              newValue={newData.writers.map(w => w.displayName).join(', ')}
+              newValue={newData.writers.map(w => w.name).join(', ')}
             />
             <ComparisonRow
               label={`キャスト (${currentData.cast.length}名 → ${newData.cast.length}名)`}
               field="cast"
               currentValue={currentData.cast.slice(0, 10).map(c => c.name).join(', ') + (currentData.cast.length > 10 ? ` 他${currentData.cast.length - 10}名` : '')}
-              newValue={newData.cast.slice(0, 10).map(c => c.displayName).join(', ') + (newData.cast.length > 10 ? ` 他${newData.cast.length - 10}名` : '')}
+              newValue={newData.cast.slice(0, 10).map(c => c.name).join(', ') + (newData.cast.length > 10 ? ` 他${newData.cast.length - 10}名` : '')}
             />
 
             {error && <p className="text-red-500 text-sm mt-4">{error}</p>}

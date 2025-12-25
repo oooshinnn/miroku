@@ -13,11 +13,10 @@ import type { TMDBMovie } from '@/lib/tmdb/types'
 
 export default function MovieSearchPage() {
   const router = useRouter()
-  const { addMovieQuick, addMovieManually, getTmdbIdToMovieIdMap } = useMovies()
+  const { addMovieManually, getTmdbIdToMovieIdMap } = useMovies()
   const [searchResults, setSearchResults] = useState<TMDBMovie[]>([])
   const [searching, setSearching] = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
-  const [addingMovieId, setAddingMovieId] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [showManualForm, setShowManualForm] = useState(false)
 
@@ -41,20 +40,6 @@ export default function MovieSearchPage() {
       setError(err instanceof Error ? err.message : '検索に失敗しました')
     } finally {
       setSearching(false)
-    }
-  }
-
-  const handleSelectMovie = async (movie: TMDBMovie) => {
-    setAddingMovieId(movie.id)
-    setError(null)
-
-    try {
-      // 基本情報のみ保存して即座に遷移（クレジットは詳細ページで取得）
-      const newMovie = await addMovieQuick(movie)
-      router.push(`/movies/${newMovie.id}`)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '映画の追加に失敗しました')
-      setAddingMovieId(null)
     }
   }
 
@@ -101,8 +86,6 @@ export default function MovieSearchPage() {
           </div>
           <MovieSearchResults
             results={searchResults}
-            onSelect={handleSelectMovie}
-            addingMovieId={addingMovieId}
             tmdbIdToMovieIdMap={getTmdbIdToMovieIdMap()}
           />
         </div>

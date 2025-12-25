@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { X } from 'lucide-react'
@@ -33,6 +34,7 @@ export function InlineWatchLogForm({
   isEdit = false,
 }: InlineWatchLogFormProps) {
   const today = new Date().toISOString().split('T')[0]
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const {
     register,
@@ -50,11 +52,21 @@ export function InlineWatchLogForm({
     },
   })
 
+  const handleFormSubmit = async (data: WatchLogFormData) => {
+    setSubmitError(null)
+    try {
+      await onSubmit(data)
+    } catch (error: any) {
+      console.error('Submit error:', error)
+      setSubmitError(error?.message || error?.details || JSON.stringify(error))
+    }
+  }
+
   const watchMethod = watch('watch_method')
   const score = watch('score')
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="bg-slate-50 rounded-lg p-4 space-y-4">
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="bg-slate-50 rounded-lg p-4 space-y-4">
       <div className="flex items-center justify-between">
         <h4 className="font-medium text-slate-900">
           {isEdit ? '視聴ログを編集' : '視聴ログを追加'}
@@ -120,9 +132,7 @@ export function InlineWatchLogForm({
               disabled={isSubmitting}
               className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                 score === value
-                  ? value === 'pickup'
-                    ? 'bg-purple-500 text-white'
-                    : value === 'good'
+                  ? value === 'good'
                     ? 'bg-green-500 text-white'
                     : value === 'neutral'
                     ? 'bg-yellow-500 text-white'
@@ -147,6 +157,10 @@ export function InlineWatchLogForm({
           className="resize-none"
         />
       </div>
+
+      {submitError && (
+        <p className="text-sm text-red-600 bg-red-50 p-2 rounded">{submitError}</p>
+      )}
 
       <div className="flex gap-2">
         <Button type="submit" disabled={isSubmitting} size="sm">

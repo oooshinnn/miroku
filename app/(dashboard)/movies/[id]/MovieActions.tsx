@@ -48,8 +48,6 @@ export function MovieActions({ movieId, tmdbMovieId, currentData }: MovieActions
   const [isDeleting, setIsDeleting] = useState(false)
 
   const handleRefreshComplete = () => {
-    // router.refresh()だけではサーバーコンポーネントのデータが更新されない場合があるため、
-    // フルリロードを行う
     window.location.reload()
   }
 

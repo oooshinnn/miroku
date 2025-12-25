@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { ProfileForm } from './ProfileForm'
+import { BulkMovieRefresh } from './BulkMovieRefresh'
 
 export default async function SettingsPage() {
   const supabase = await createClient()
@@ -19,6 +20,9 @@ export default async function SettingsPage() {
         initialEmail={user.email || ''}
         initialDisplayName={user.user_metadata?.display_name || ''}
       />
+
+      <h2 className="text-2xl font-bold text-slate-900 pt-6">データ管理</h2>
+      <BulkMovieRefresh />
     </div>
   )
 }

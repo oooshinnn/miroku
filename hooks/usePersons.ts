@@ -177,6 +177,29 @@ export function usePersons() {
     return data || []
   }
 
+  const deleteUnusedPersons = async (): Promise<number> => {
+    // 作品が0の人物（movie_personsに存在しない）を削除
+    const unusedPersons = personsWithStats.filter((p) => p.movie_count === 0)
+
+    if (unusedPersons.length === 0) {
+      return 0
+    }
+
+    const unusedIds = unusedPersons.map((p) => p.id)
+
+    const { error } = await supabase
+      .from('persons')
+      .delete()
+      .in('id', unusedIds)
+
+    if (error) {
+      throw error
+    }
+
+    await fetchPersons()
+    return unusedIds.length
+  }
+
   return {
     persons,
     personsWithStats,
@@ -185,6 +208,7 @@ export function usePersons() {
     mergePersons,
     unmergePersons,
     getMergedPersons,
+    deleteUnusedPersons,
     refetch: fetchPersons,
   }
 }

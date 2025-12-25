@@ -45,7 +45,8 @@ export function WatchLogEditClient({ watchLog }: WatchLogEditClientProps) {
               movie_id: watchLog.movie_id,
               watched_at: watchLog.watched_at,
               watch_method: watchLog.watch_method,
-              score: watchLog.score || undefined,
+              // pickupは廃止されたのでundefinedとして扱う
+              score: watchLog.score && watchLog.score !== 'pickup' ? watchLog.score : undefined,
               memo: watchLog.memo || undefined,
             }}
             onSubmit={handleSubmit}

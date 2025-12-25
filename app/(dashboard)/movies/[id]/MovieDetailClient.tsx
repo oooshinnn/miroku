@@ -6,18 +6,16 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { InlineWatchLogForm } from '@/components/watch-logs/InlineWatchLogForm'
 import { InlineWatchLogItem } from '@/components/watch-logs/InlineWatchLogItem'
-import { WatchCountEditor } from '@/components/movies/WatchCountEditor'
 import { useWatchLogs } from '@/hooks/useWatchLogs'
 import type { WatchLogFormData } from '@/lib/validations/watch-log'
 
 interface MovieDetailClientProps {
   movieId: string
-  initialWatchCount: number
 }
 
-export function MovieDetailClient({ movieId, initialWatchCount }: MovieDetailClientProps) {
+export function MovieDetailClient({ movieId }: MovieDetailClientProps) {
   const [isAdding, setIsAdding] = useState(false)
-  const { watchLogs, loading, addWatchLog, updateWatchLog, deleteWatchLog } = useWatchLogs(movieId)
+  const { watchLogs, loading, addWatchLog, updateWatchLog, deleteWatchLog } = useWatchLogs({ movieId })
 
   const handleAdd = async (data: WatchLogFormData) => {
     await addWatchLog({
@@ -49,7 +47,7 @@ export function MovieDetailClient({ movieId, initialWatchCount }: MovieDetailCli
         <div>
           <div className="flex items-center gap-3">
             <CardTitle>視聴ログ</CardTitle>
-            <WatchCountEditor movieId={movieId} initialCount={initialWatchCount} />
+            <span className="text-sm text-slate-500">{watchLogs.length}回</span>
           </div>
           <CardDescription>この映画の視聴記録</CardDescription>
         </div>
