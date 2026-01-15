@@ -13,9 +13,9 @@ interface StarRatingProps {
 }
 
 const sizeClasses = {
-  sm: 'h-3 w-3',
-  md: 'h-4 w-4',
-  lg: 'h-5 w-5',
+  sm: 'h-4 w-4',
+  md: 'h-6 w-6',
+  lg: 'h-8 w-8',
 }
 
 export function StarRating({
@@ -46,7 +46,7 @@ export function StarRating({
           disabled={readonly}
           onClick={() => handleClick(star)}
           className={cn(
-            'p-0 border-0 bg-transparent transition-colors',
+            'p-0.5 border-0 bg-transparent transition-all',
             !readonly && 'hover:scale-110 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 rounded-sm',
             readonly && 'cursor-default'
           )}

@@ -21,7 +21,7 @@ export function MovieCard({ movie }: MovieCardProps) {
       className="group grid grid-rows-subgrid row-span-3 gap-0"
     >
       {/* ポスター画像（2:3比率） */}
-      <div className="relative aspect-[2/3] bg-slate-200 rounded-t-lg overflow-hidden">
+      <div className="relative aspect-[2/3] bg-slate-200 overflow-hidden">
         {posterPath ? (
           <Image
             src={posterPath}
@@ -36,13 +36,6 @@ export function MovieCard({ movie }: MovieCardProps) {
             画像なし
           </div>
         )}
-        {/* 評価バッジ */}
-        {movie.bestScore && (
-          <div className="absolute top-1 right-1 flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-white/90 text-yellow-500">
-            <Star className="h-3 w-3 fill-current" />
-            <span className="text-xs font-medium">{movie.bestScore}</span>
-          </div>
-        )}
       </div>
 
       {/* タイトル */}
@@ -54,10 +47,18 @@ export function MovieCard({ movie }: MovieCardProps) {
 
       {/* メタ情報 + タグ */}
       <div className="px-2 pb-2 pt-1 space-y-1">
-        <p className="text-xs text-slate-500">
-          {releaseDate ? new Date(releaseDate).getFullYear() : '年不明'}
-          {movie.watch_count > 0 && ` • ${movie.watch_count}回`}
-        </p>
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-slate-500">
+            {releaseDate ? new Date(releaseDate).getFullYear() : '年不明'}
+            {movie.watch_count > 0 && ` • ${movie.watch_count}回`}
+          </p>
+          {movie.bestScore && (
+            <div className="flex items-center gap-0.5 text-yellow-500">
+              <Star className="h-3.5 w-3.5 fill-current" />
+              <span className="text-xs font-medium">{movie.bestScore}</span>
+            </div>
+          )}
+        </div>
         {movie.tags && movie.tags.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {movie.tags.slice(0, 3).map((tag) => (

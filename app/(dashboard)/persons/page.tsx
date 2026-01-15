@@ -223,7 +223,7 @@ export default function PersonsPage() {
                   <>
                     {/* 顔写真 */}
                     <Link href={`/persons/${person.id}`} className="block">
-                      <div className="relative w-20 h-20 mx-auto rounded-full overflow-hidden bg-slate-200 mb-3">
+                      <div className="relative w-24 h-24 mx-auto rounded-[30%] overflow-hidden bg-slate-200 mb-3">
                         {person.tmdb_profile_path ? (
                           <Image
                             src={`${IMAGE_BASE_URL}${person.tmdb_profile_path}`}

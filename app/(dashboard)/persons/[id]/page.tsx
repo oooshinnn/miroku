@@ -83,7 +83,7 @@ export default async function PersonDetailPage({ params }: PersonDetailPageProps
 
       {/* 人物情報 */}
       <div className="flex items-center gap-4">
-        <div className="relative w-20 h-20 rounded-full overflow-hidden bg-slate-200 flex-shrink-0">
+        <div className="relative w-32 h-32 rounded-[30%] overflow-hidden bg-slate-200 flex-shrink-0">
           {person.tmdb_profile_path ? (
             <Image
               src={`${IMAGE_BASE_URL}${person.tmdb_profile_path}`}
