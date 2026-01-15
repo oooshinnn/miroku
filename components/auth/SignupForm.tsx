@@ -43,7 +43,7 @@ export function SignupForm() {
   }
 
   return (
-    <Card className="w-full max-w-md">
+    <Card className="w-full">
       <CardHeader>
         <CardTitle>アカウント作成</CardTitle>
         <CardDescription>

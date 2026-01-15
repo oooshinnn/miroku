@@ -36,7 +36,7 @@ export function LoginForm() {
   }
 
   return (
-    <Card className="w-full max-w-md">
+    <Card className="w-full">
       <CardHeader>
         <CardTitle>ログイン</CardTitle>
         <CardDescription>

@@ -9,7 +9,9 @@ export default function AuthLayout({
         <h1 className="text-4xl font-bold text-slate-900">MIROKU</h1>
         <p className="text-sm text-slate-600 text-center mt-2">映画視聴記録アプリ</p>
       </div>
-      {children}
+      <div className="w-full max-w-xl px-4">
+        {children}
+      </div>
     </div>
   )
 }
