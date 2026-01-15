@@ -1,7 +1,9 @@
 'use client'
 
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronDown, LogOut, Settings, User } from 'lucide-react'
+import { ChevronDown, Loader2, LogOut, Settings, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -17,14 +19,21 @@ interface UserMenuProps {
 }
 
 export function UserMenu({ displayName, email }: UserMenuProps) {
+  const router = useRouter()
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
   const name = displayName || email.split('@')[0]
 
-  const handleLogout = () => {
-    const form = document.createElement('form')
-    form.method = 'POST'
-    form.action = '/api/auth/signout'
-    document.body.appendChild(form)
-    form.submit()
+  const handleLogout = async () => {
+    setIsLoggingOut(true)
+    try {
+      const response = await fetch('/api/auth/signout', { method: 'POST' })
+      if (response.ok) {
+        router.push('/login')
+        router.refresh()
+      }
+    } catch {
+      setIsLoggingOut(false)
+    }
   }
 
   return (
@@ -44,9 +53,17 @@ export function UserMenu({ displayName, email }: UserMenuProps) {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleLogout} className="flex items-center gap-2 cursor-pointer text-red-600">
-          <LogOut className="h-4 w-4" />
-          ログアウト
+        <DropdownMenuItem
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+          className="flex items-center gap-2 cursor-pointer text-red-600"
+        >
+          {isLoggingOut ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <LogOut className="h-4 w-4" />
+          )}
+          {isLoggingOut ? 'ログアウト中...' : 'ログアウト'}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

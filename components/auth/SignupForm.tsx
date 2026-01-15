@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { translateAuthError } from '@/lib/utils/auth-errors'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -34,7 +35,7 @@ export function SignupForm() {
     })
 
     if (error) {
-      setError(error.message)
+      setError(translateAuthError(error.message))
       setLoading(false)
     } else {
       router.push('/movies')
@@ -57,6 +58,7 @@ export function SignupForm() {
             <Input
               id="email"
               type="email"
+              autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -68,6 +70,7 @@ export function SignupForm() {
             <Input
               id="password"
               type="password"
+              autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -80,6 +83,7 @@ export function SignupForm() {
             <Input
               id="confirmPassword"
               type="password"
+              autoComplete="new-password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
