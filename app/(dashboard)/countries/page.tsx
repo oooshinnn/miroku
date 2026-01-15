@@ -56,7 +56,7 @@ export default function CountriesBrowsePage() {
       {/* 統計サマリー */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
         {stats.slice(0, 12).map(({ country, count }) => (
-          <Link key={country} href={`/browse/countries/${encodeURIComponent(country)}`}>
+          <Link key={country} href={`/countries/${encodeURIComponent(country)}`}>
             <Card className="hover:border-slate-400 transition-colors cursor-pointer">
               <CardContent className="pt-4">
                 <div className="flex items-center justify-center gap-2 text-slate-600 mb-2">
@@ -98,7 +98,7 @@ export default function CountriesBrowsePage() {
 
             {countryMovies.length > 12 && (
               <Link
-                href={`/browse/countries/${encodeURIComponent(country)}`}
+                href={`/countries/${encodeURIComponent(country)}`}
                 className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
               >
                 すべて表示 ({countryMovies.length}本)

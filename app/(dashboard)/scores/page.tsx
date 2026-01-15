@@ -92,7 +92,7 @@ export default function ScoresBrowsePage() {
 
             {scoreMovies.length > 12 && (
               <Link
-                href={`/browse/scores/${score}`}
+                href={`/scores/${score}`}
                 className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
               >
                 すべて表示 ({scoreMovies.length}本)

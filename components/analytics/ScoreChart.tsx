@@ -95,7 +95,7 @@ export function ScoreChart({ data }: ScoreChartProps) {
           {fullData.map(({ score, count }) => (
             <Link
               key={score}
-              href={`/browse/scores/${score}`}
+              href={`/scores/${score}`}
               className="flex flex-col items-center p-2 rounded-lg hover:bg-slate-100 transition-colors"
             >
               <div className="flex items-center gap-0.5 text-yellow-500">

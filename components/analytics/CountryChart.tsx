@@ -38,7 +38,7 @@ export function CountryChart({ data }: CountryChartProps) {
             <CardDescription>製作国ごとの視聴本数（Top 10）</CardDescription>
           </div>
           <Link
-            href="/browse/countries"
+            href="/countries"
             className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
           >
             すべて見る
@@ -63,7 +63,7 @@ export function CountryChart({ data }: CountryChartProps) {
           {data.slice(0, 5).map(({ name, count }) => (
             <Link
               key={name}
-              href={`/browse/countries/${encodeURIComponent(name)}`}
+              href={`/countries/${encodeURIComponent(name)}`}
               className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-100 transition-colors"
             >
               <div className="flex items-center gap-2">

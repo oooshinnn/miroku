@@ -39,7 +39,7 @@ export function TagChart({ data }: TagChartProps) {
             <CardDescription>タグごとの視聴本数（Top 10）</CardDescription>
           </div>
           <Link
-            href="/browse/tags"
+            href="/tags"
             className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
           >
             すべて見る
@@ -64,7 +64,7 @@ export function TagChart({ data }: TagChartProps) {
           {data.slice(0, 5).map(({ id, name, count }) => (
             <Link
               key={id}
-              href={`/browse/tags/${id}`}
+              href={`/tags/${id}`}
               className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-100 transition-colors"
             >
               <div className="flex items-center gap-2">

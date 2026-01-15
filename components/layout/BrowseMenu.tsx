@@ -3,13 +3,14 @@
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ChevronDown, Star, Calendar, Globe, Tag } from 'lucide-react'
+import { ChevronDown, Star, Calendar, Globe, Tag, User } from 'lucide-react'
 
 const BROWSE_ITEMS = [
-  { href: '/browse/scores', label: 'スコア別', icon: Star },
-  { href: '/browse/months', label: '視聴月別', icon: Calendar },
-  { href: '/browse/countries', label: '制作国別', icon: Globe },
-  { href: '/browse/tags', label: 'タグ別', icon: Tag },
+  { href: '/persons', label: '人物別', icon: User },
+  { href: '/tags', label: 'タグ別', icon: Tag },
+  { href: '/scores', label: 'スコア別', icon: Star },
+  { href: '/months', label: '視聴月別', icon: Calendar },
+  { href: '/countries', label: '制作国別', icon: Globe },
 ]
 
 export function BrowseMenu() {
@@ -17,7 +18,7 @@ export function BrowseMenu() {
   const menuRef = useRef<HTMLDivElement>(null)
   const pathname = usePathname()
 
-  const isActive = pathname.startsWith('/browse')
+  const isActive = BROWSE_ITEMS.some(item => pathname.startsWith(item.href))
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {

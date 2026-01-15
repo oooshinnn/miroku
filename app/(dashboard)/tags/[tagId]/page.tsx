@@ -62,7 +62,7 @@ export default function TagDetailPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Link
-          href="/browse/tags"
+          href="/tags"
           className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
         >
           <ArrowLeft className="h-5 w-5" />

@@ -41,7 +41,7 @@ export function MonthlyWatchChart({ data }: MonthlyWatchChartProps) {
             <CardDescription>各月に視聴した映画の本数（重複除外）</CardDescription>
           </div>
           <Link
-            href="/browse/months"
+            href="/months"
             className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800"
           >
             すべて見る
@@ -69,7 +69,7 @@ export function MonthlyWatchChart({ data }: MonthlyWatchChartProps) {
             return (
               <Link
                 key={month}
-                href={`/browse/months/${monthKey}`}
+                href={`/months/${monthKey}`}
                 className="flex flex-col items-center p-2 rounded-lg hover:bg-slate-100 transition-colors"
               >
                 <Calendar className="h-4 w-4 text-blue-500 mb-1" />

@@ -40,18 +40,6 @@ export default async function DashboardLayout({
                 >
                   視聴ログ
                 </Link>
-                <Link
-                  href="/persons"
-                  className="text-slate-600 hover:text-slate-900 transition-colors"
-                >
-                  人物
-                </Link>
-                <Link
-                  href="/tags"
-                  className="text-slate-600 hover:text-slate-900 transition-colors"
-                >
-                  タグ
-                </Link>
                 <BrowseMenu />
                 <Link
                   href="/analytics"

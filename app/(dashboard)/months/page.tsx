@@ -82,7 +82,7 @@ export default function MonthsBrowsePage() {
           <h2 className="text-xl font-bold text-slate-900">{year}年</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
             {yearMonths.map(month => (
-              <Link key={month.month} href={`/browse/months/${month.month}`}>
+              <Link key={month.month} href={`/months/${month.month}`}>
                 <Card className="hover:border-slate-400 transition-colors cursor-pointer">
                   <CardContent className="pt-4">
                     <div className="flex items-center justify-center gap-2 text-slate-600 mb-2">

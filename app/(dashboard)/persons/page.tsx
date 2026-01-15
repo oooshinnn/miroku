@@ -178,116 +178,119 @@ export default function PersonsPage() {
       {/* 人物一覧 */}
       <div className="text-sm text-slate-600">{filteredPersons.length} 人</div>
 
-      <div className="grid gap-3">
-        {filteredPersons.length === 0 ? (
-          <Card>
-            <CardContent className="py-8 text-center text-slate-600">
-              {searchQuery
-                ? '検索条件に一致する人物がいません'
-                : '人物がまだ登録されていません'}
-            </CardContent>
-          </Card>
-        ) : (
-          filteredPersons.map((person) => (
-            <Card key={person.id}>
-              <CardContent className="py-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4 flex-1">
+      {filteredPersons.length === 0 ? (
+        <Card>
+          <CardContent className="py-8 text-center text-slate-600">
+            {searchQuery
+              ? '検索条件に一致する人物がいません'
+              : '人物がまだ登録されていません'}
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+          {filteredPersons.map((person) => (
+            <Card key={person.id} className="group relative">
+              <CardContent className="pt-4 pb-3 px-3">
+                {/* 編集モード */}
+                {editingId === person.id ? (
+                  <div className="space-y-2">
+                    <Input
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      className="text-sm"
+                      autoFocus
+                    />
+                    <div className="flex gap-1 justify-center">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={handleSaveEdit}
+                        className="text-green-600 hover:text-green-700 h-8 px-2"
+                      >
+                        <Check className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={handleCancelEdit}
+                        className="text-slate-600 hover:text-slate-700 h-8 px-2"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
                     {/* 顔写真 */}
-                    <div className="relative w-12 h-12 rounded-full overflow-hidden bg-slate-200 flex-shrink-0">
-                      {person.tmdb_profile_path ? (
-                        <Image
-                          src={`${IMAGE_BASE_URL}${person.tmdb_profile_path}`}
-                          alt={person.display_name}
-                          fill
-                          className="object-cover"
-                          unoptimized
-                        />
-                      ) : (
-                        <div className="flex items-center justify-center h-full text-slate-400">
-                          <User className="h-6 w-6" />
-                        </div>
-                      )}
+                    <Link href={`/persons/${person.id}`} className="block">
+                      <div className="relative w-20 h-20 mx-auto rounded-full overflow-hidden bg-slate-200 mb-3">
+                        {person.tmdb_profile_path ? (
+                          <Image
+                            src={`${IMAGE_BASE_URL}${person.tmdb_profile_path}`}
+                            alt={person.display_name}
+                            fill
+                            className="object-cover"
+                            unoptimized
+                          />
+                        ) : (
+                          <div className="flex items-center justify-center h-full text-slate-400">
+                            <User className="h-10 w-10" />
+                          </div>
+                        )}
+                      </div>
+                    </Link>
+
+                    {/* 名前 */}
+                    <Link
+                      href={`/persons/${person.id}`}
+                      className="block text-center font-medium text-sm text-slate-900 hover:text-blue-600 transition-colors truncate"
+                      title={person.display_name}
+                    >
+                      {person.display_name}
+                    </Link>
+
+                    {/* 役割バッジ */}
+                    <div className="flex flex-wrap gap-1 justify-center mt-2">
+                      {person.roles.map((role) => (
+                        <Badge key={role} variant="secondary" className="text-xs px-1.5 py-0">
+                          {roleLabels[role]}
+                        </Badge>
+                      ))}
                     </div>
 
-                    {editingId === person.id ? (
-                      <div className="flex items-center gap-2 flex-1">
-                        <Input
-                          value={editName}
-                          onChange={(e) => setEditName(e.target.value)}
-                          className="max-w-xs"
-                          autoFocus
-                        />
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={handleSaveEdit}
-                          className="text-green-600 hover:text-green-700"
-                        >
-                          <Check className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={handleCancelEdit}
-                          className="text-slate-600 hover:text-slate-700"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <>
-                        <div>
-                          <Link
-                            href={`/persons/${person.id}`}
-                            className="font-medium text-slate-900 hover:text-blue-600 transition-colors"
-                          >
-                            {person.display_name}
-                          </Link>
-                          <div className="flex gap-2 mt-1">
-                            {person.roles.map((role) => (
-                              <Badge key={role} variant="secondary" className="text-xs">
-                                {roleLabels[role]}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                        <Link
-                          href={`/persons/${person.id}`}
-                          className="text-sm text-slate-500 hover:text-blue-600 transition-colors"
-                        >
-                          {person.movie_count} 作品
-                        </Link>
-                      </>
-                    )}
-                  </div>
+                    {/* 作品数 */}
+                    <p className="text-xs text-slate-500 text-center mt-2">
+                      {person.movie_count} 作品
+                    </p>
 
-                  {editingId !== person.id && (
-                    <div className="flex items-center gap-1">
+                    {/* ホバー時のアクションボタン */}
+                    <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity flex gap-0.5">
                       <Button
                         size="icon"
                         variant="ghost"
                         onClick={() => handleStartEdit(person)}
                         title="名前を編集"
+                        className="h-7 w-7"
                       >
-                        <Edit2 className="h-4 w-4" />
+                        <Edit2 className="h-3.5 w-3.5" />
                       </Button>
                       <Button
                         size="icon"
                         variant="ghost"
                         onClick={() => handleOpenMergeDialog(person)}
                         title="他の人物にマージ"
+                        className="h-7 w-7"
                       >
-                        <GitMerge className="h-4 w-4" />
+                        <GitMerge className="h-3.5 w-3.5" />
                       </Button>
                     </div>
-                  )}
-                </div>
+                  </>
+                )}
               </CardContent>
             </Card>
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* マージダイアログ */}
       <Dialog open={mergeDialogOpen} onOpenChange={setMergeDialogOpen}>
