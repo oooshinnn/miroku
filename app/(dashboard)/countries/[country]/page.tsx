@@ -3,7 +3,8 @@
 import { useMemo } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { Globe, ArrowLeft } from 'lucide-react'
+import { Globe } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { useMovieFilter } from '@/hooks/useMovieFilter'
 import { MovieCard } from '@/components/movies/MovieCard'
 
@@ -25,22 +26,20 @@ export default function CountryDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Link
-          href="/countries"
-          className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-        >
-          <ArrowLeft className="h-5 w-5" />
+      <div>
+        <Link href="/countries">
+          <Button variant="outline">← 一覧に戻る</Button>
         </Link>
-        <div>
-          <div className="flex items-center gap-2">
-            <Globe className="h-6 w-6 text-slate-600" />
-            <h1 className="text-2xl font-bold text-slate-900">
-              {country}の映画
-            </h1>
-          </div>
-          <p className="text-slate-600 mt-1">{filteredMovies.length}本</p>
+      </div>
+
+      <div>
+        <div className="flex items-center gap-2">
+          <Globe className="h-6 w-6 text-slate-600" />
+          <h1 className="text-2xl font-bold text-slate-900">
+            {country}の映画
+          </h1>
         </div>
+        <p className="text-slate-600 mt-1">{filteredMovies.length}本</p>
       </div>
 
       {filteredMovies.length > 0 ? (

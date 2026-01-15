@@ -4,7 +4,8 @@ import { useMemo } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import useSWR from 'swr'
-import { Calendar, ArrowLeft } from 'lucide-react'
+import { Calendar } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
 import { MovieCard } from '@/components/movies/MovieCard'
 import { useMovieFilter } from '@/hooks/useMovieFilter'
@@ -61,22 +62,20 @@ export default function MonthDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Link
-          href="/months"
-          className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-        >
-          <ArrowLeft className="h-5 w-5" />
+      <div>
+        <Link href="/months">
+          <Button variant="outline">← 一覧に戻る</Button>
         </Link>
-        <div>
-          <div className="flex items-center gap-2">
-            <Calendar className="h-6 w-6 text-slate-600" />
-            <h1 className="text-2xl font-bold text-slate-900">
-              {monthLabel}の映画
-            </h1>
-          </div>
-          <p className="text-slate-600 mt-1">{filteredMovies.length}本</p>
+      </div>
+
+      <div>
+        <div className="flex items-center gap-2">
+          <Calendar className="h-6 w-6 text-slate-600" />
+          <h1 className="text-2xl font-bold text-slate-900">
+            {monthLabel}の映画
+          </h1>
         </div>
+        <p className="text-slate-600 mt-1">{filteredMovies.length}本</p>
       </div>
 
       {filteredMovies.length > 0 ? (

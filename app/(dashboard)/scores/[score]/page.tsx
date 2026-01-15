@@ -3,7 +3,8 @@
 import { useMemo } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { Star, ArrowLeft } from 'lucide-react'
+import { Star } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { useMovieFilter } from '@/hooks/useMovieFilter'
 import { MovieCard } from '@/components/movies/MovieCard'
 import type { WatchScore } from '@/types/watch-log'
@@ -23,26 +24,24 @@ export default function ScoreDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Link
-          href="/scores"
-          className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-        >
-          <ArrowLeft className="h-5 w-5" />
+      <div>
+        <Link href="/scores">
+          <Button variant="outline">← 一覧に戻る</Button>
         </Link>
-        <div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-0.5 text-yellow-500">
-              {Array.from({ length: score }).map((_, i) => (
-                <Star key={i} className="h-6 w-6 fill-current" />
-              ))}
-            </div>
-            <h1 className="text-2xl font-bold text-slate-900">
-              の映画
-            </h1>
+      </div>
+
+      <div>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-0.5 text-yellow-500">
+            {Array.from({ length: score }).map((_, i) => (
+              <Star key={i} className="h-6 w-6 fill-current" />
+            ))}
           </div>
-          <p className="text-slate-600 mt-1">{filteredMovies.length}本</p>
+          <h1 className="text-2xl font-bold text-slate-900">
+            の映画
+          </h1>
         </div>
+        <p className="text-slate-600 mt-1">{filteredMovies.length}本</p>
       </div>
 
       {filteredMovies.length > 0 ? (
