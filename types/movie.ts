@@ -1,4 +1,5 @@
 import type { Database } from './database'
+import type { WatchScore } from './watch-log'
 
 export type Movie = Database['public']['Tables']['movies']['Row']
 export type MovieInsert = Database['public']['Tables']['movies']['Insert']
@@ -17,8 +18,6 @@ export interface MovieWithDetails extends Movie {
     cast_order: number | null
   }[]
 }
-
-export type WatchScore = 'bad' | 'neutral' | 'good'
 
 export interface MovieWithExtras extends Movie {
   tags: { id: string; name: string; color: string | null }[]

@@ -14,7 +14,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { WATCH_METHOD_LABELS, WATCH_SCORE_LABELS } from '@/types/watch-log'
+import { StarRating } from '@/components/ui/star-rating'
+import { WATCH_METHOD_LABELS } from '@/types/watch-log'
+import type { WatchScore } from '@/types/watch-log'
 
 interface WatchLogFormProps {
   defaultValues?: Partial<WatchLogFormData>
@@ -84,33 +86,12 @@ export function WatchLogForm({
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="score">スコア（任意）</Label>
-        <Select
-          value={score || undefined}
-          onValueChange={(value) => setValue('score', value as any)}
-          disabled={isSubmitting}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="スコアを選択" />
-          </SelectTrigger>
-          <SelectContent>
-            {Object.entries(WATCH_SCORE_LABELS).map(([value, label]) => (
-              <SelectItem key={value} value={value}>
-                {label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {score && (
-          <button
-            type="button"
-            onClick={() => setValue('score', undefined)}
-            className="text-sm text-slate-600 hover:text-slate-900"
-            disabled={isSubmitting}
-          >
-            選択を解除
-          </button>
-        )}
+        <Label>評価（任意）</Label>
+        <StarRating
+          value={score as WatchScore | undefined}
+          onChange={(value) => setValue('score', value)}
+          size="lg"
+        />
       </div>
 
       <div className="space-y-2">

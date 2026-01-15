@@ -6,12 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Film } from 'lucide-react'
+import { StarRating } from '@/components/ui/star-rating'
 import {
   WATCH_METHOD_LABELS,
-  WATCH_SCORE_LABELS,
-  WATCH_SCORE_COLORS,
   type WatchLogWithMovie,
 } from '@/types/watch-log'
+import type { WatchScore } from '@/types/watch-log'
 
 interface WatchLogCardProps {
   watchLog: WatchLogWithMovie
@@ -60,10 +60,8 @@ export function WatchLogCard({ watchLog, onDelete, showMovie = true }: WatchLogC
                   {WATCH_METHOD_LABELS[watchLog.watch_method]}
                 </CardDescription>
               </div>
-              {watchLog.score && watchLog.score !== 'pickup' && (
-                <Badge className={WATCH_SCORE_COLORS[watchLog.score]}>
-                  {WATCH_SCORE_LABELS[watchLog.score]}
-                </Badge>
+              {watchLog.score && (
+                <StarRating value={watchLog.score as WatchScore} readonly size="sm" />
               )}
             </div>
           </div>

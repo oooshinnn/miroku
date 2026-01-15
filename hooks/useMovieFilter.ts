@@ -3,7 +3,8 @@
 import { useState, useMemo } from 'react'
 import useSWR from 'swr'
 import { createClient } from '@/lib/supabase/client'
-import type { Movie, MovieWithExtras, WatchScore } from '@/types/movie'
+import type { Movie, MovieWithExtras } from '@/types/movie'
+import type { WatchScore } from '@/types/watch-log'
 
 export type SortBy = 'watched_at' | 'release_date' | 'created_at'
 
@@ -23,13 +24,6 @@ const defaultFilters: MovieFilters = {
   yearFrom: null,
   yearTo: null,
   sortBy: 'watched_at',
-}
-
-// スコアの優先順位（高い方が良い評価）
-const scoreOrder: Record<WatchScore, number> = {
-  bad: 0,
-  neutral: 1,
-  good: 2,
 }
 
 // SWR キャッシュキー
@@ -91,10 +85,10 @@ const fetchAllMoviesWithExtras = async (): Promise<MovieWithExtras[]> => {
       if (!latestWatchedMap.has(log.movie_id)) {
         latestWatchedMap.set(log.movie_id, log.watched_at)
       }
-      // 最高評価
-      if (log.score && log.score !== 'pickup') {
+      // 最高評価（数値の大きい方が良い評価）
+      if (log.score) {
         const currentBest = bestScoreMap.get(log.movie_id)
-        if (!currentBest || scoreOrder[log.score as WatchScore] > scoreOrder[currentBest]) {
+        if (!currentBest || (log.score as number) > currentBest) {
           bestScoreMap.set(log.movie_id, log.score as WatchScore)
         }
       }

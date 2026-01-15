@@ -5,7 +5,7 @@ export type WatchLogInsert = Database['public']['Tables']['watch_logs']['Insert'
 export type WatchLogUpdate = Database['public']['Tables']['watch_logs']['Update']
 
 export type WatchMethod = 'theater' | 'tv' | 'streaming' | 'bluray_dvd' | 'other'
-export type WatchScore = 'bad' | 'neutral' | 'good'
+export type WatchScore = 1 | 2 | 3 | 4 | 5
 
 export interface WatchLogWithMovie extends WatchLog {
   movie?: {
@@ -24,14 +24,12 @@ export const WATCH_METHOD_LABELS: Record<WatchMethod, string> = {
   other: 'その他',
 }
 
-export const WATCH_SCORE_LABELS: Record<WatchScore, string> = {
-  bad: 'Bad',
-  neutral: 'Neutral',
-  good: 'Good',
-}
+export const WATCH_SCORES: WatchScore[] = [1, 2, 3, 4, 5]
 
-export const WATCH_SCORE_COLORS: Record<WatchScore, string> = {
-  bad: 'bg-red-100 text-red-800',
-  neutral: 'bg-yellow-100 text-yellow-800',
-  good: 'bg-green-100 text-green-800',
+export const WATCH_SCORE_LABELS: Record<WatchScore, string> = {
+  1: '1',
+  2: '2',
+  3: '3',
+  4: '4',
+  5: '5',
 }

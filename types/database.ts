@@ -170,7 +170,7 @@ export interface Database {
           movie_id: string
           watched_at: string
           watch_method: 'theater' | 'tv' | 'streaming' | 'bluray_dvd' | 'other'
-          score: 'bad' | 'neutral' | 'good' | 'pickup' | null
+          score: number | null
           memo: string | null
           created_at: string
           updated_at: string
@@ -181,7 +181,7 @@ export interface Database {
           movie_id: string
           watched_at: string
           watch_method: 'theater' | 'tv' | 'streaming' | 'bluray_dvd' | 'other'
-          score?: 'bad' | 'neutral' | 'good' | 'pickup' | null
+          score?: number | null
           memo?: string | null
           created_at?: string
           updated_at?: string
@@ -192,7 +192,7 @@ export interface Database {
           movie_id?: string
           watched_at?: string
           watch_method?: 'theater' | 'tv' | 'streaming' | 'bluray_dvd' | 'other'
-          score?: 'bad' | 'neutral' | 'good' | 'pickup' | null
+          score?: number | null
           memo?: string | null
           created_at?: string
           updated_at?: string

@@ -2,17 +2,11 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { ThumbsUp, Minus, ThumbsDown } from 'lucide-react'
-import type { MovieWithExtras, WatchScore } from '@/types/movie'
+import { Star } from 'lucide-react'
+import type { MovieWithExtras } from '@/types/movie'
 
 interface MovieCardProps {
   movie: MovieWithExtras
-}
-
-const scoreConfig: Record<WatchScore, { icon: React.ReactNode; color: string; label: string }> = {
-  good: { icon: <ThumbsUp className="h-3 w-3" />, color: 'text-green-500', label: 'Good' },
-  neutral: { icon: <Minus className="h-3 w-3" />, color: 'text-slate-400', label: 'Neutral' },
-  bad: { icon: <ThumbsDown className="h-3 w-3" />, color: 'text-red-400', label: 'Bad' },
 }
 
 export function MovieCard({ movie }: MovieCardProps) {
@@ -44,8 +38,9 @@ export function MovieCard({ movie }: MovieCardProps) {
         )}
         {/* 評価バッジ */}
         {movie.bestScore && (
-          <div className={`absolute top-1 right-1 flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-white/90 ${scoreConfig[movie.bestScore].color}`}>
-            {scoreConfig[movie.bestScore].icon}
+          <div className="absolute top-1 right-1 flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-white/90 text-yellow-500">
+            <Star className="h-3 w-3 fill-current" />
+            <span className="text-xs font-medium">{movie.bestScore}</span>
           </div>
         )}
       </div>

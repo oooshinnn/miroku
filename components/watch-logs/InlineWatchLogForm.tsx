@@ -16,7 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { WATCH_METHOD_LABELS, WATCH_SCORE_LABELS } from '@/types/watch-log'
+import { StarRating } from '@/components/ui/star-rating'
+import { WATCH_METHOD_LABELS } from '@/types/watch-log'
+import type { WatchScore } from '@/types/watch-log'
 
 interface InlineWatchLogFormProps {
   movieId: string
@@ -122,28 +124,12 @@ export function InlineWatchLogForm({
       </div>
 
       <div className="space-y-1">
-        <Label className="text-sm">スコア</Label>
-        <div className="flex gap-2">
-          {Object.entries(WATCH_SCORE_LABELS).map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => setValue('score', score === value ? undefined : value as any)}
-              disabled={isSubmitting}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                score === value
-                  ? value === 'good'
-                    ? 'bg-green-500 text-white'
-                    : value === 'neutral'
-                    ? 'bg-yellow-500 text-white'
-                    : 'bg-red-500 text-white'
-                  : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        <Label className="text-sm">評価</Label>
+        <StarRating
+          value={score as WatchScore | undefined}
+          onChange={(value) => setValue('score', value)}
+          size="md"
+        />
       </div>
 
       <div className="space-y-1">

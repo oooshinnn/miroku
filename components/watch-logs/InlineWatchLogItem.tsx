@@ -2,13 +2,11 @@
 
 import { useState } from 'react'
 import { Edit2, Trash2 } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { InlineWatchLogForm } from './InlineWatchLogForm'
+import { StarRating } from '@/components/ui/star-rating'
 import {
   WATCH_METHOD_LABELS,
-  WATCH_SCORE_LABELS,
-  WATCH_SCORE_COLORS,
   type WatchLogWithMovie,
   type WatchMethod,
   type WatchScore,
@@ -54,8 +52,7 @@ export function InlineWatchLogItem({ watchLog, onUpdate, onDelete }: InlineWatch
           movie_id: watchLog.movie_id,
           watched_at: watchLog.watched_at,
           watch_method: watchLog.watch_method as WatchMethod,
-          // pickupは廃止されたのでundefinedとして扱う
-          score: watchLog.score && watchLog.score !== 'pickup' ? watchLog.score as WatchScore : undefined,
+          score: watchLog.score as WatchScore | undefined,
           memo: watchLog.memo || '',
         }}
         onSubmit={handleUpdate}
@@ -76,10 +73,8 @@ export function InlineWatchLogItem({ watchLog, onUpdate, onDelete }: InlineWatch
           <span className="text-slate-600 text-sm">
             {WATCH_METHOD_LABELS[watchLog.watch_method]}
           </span>
-          {watchLog.score && watchLog.score !== 'pickup' && (
-            <Badge className={`${WATCH_SCORE_COLORS[watchLog.score]} text-xs`}>
-              {WATCH_SCORE_LABELS[watchLog.score]}
-            </Badge>
+          {watchLog.score && (
+            <StarRating value={watchLog.score as WatchScore} readonly size="sm" />
           )}
         </div>
         {watchLog.memo && (

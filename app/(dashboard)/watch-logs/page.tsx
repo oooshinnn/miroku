@@ -2,17 +2,16 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { Star } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { WatchLogList } from '@/components/watch-logs/WatchLogList'
 import { useWatchLogs } from '@/hooks/useWatchLogs'
-import { WATCH_SCORE_LABELS, type WatchScore } from '@/types/watch-log'
+import { WATCH_SCORES, type WatchScore } from '@/types/watch-log'
 import { cn } from '@/lib/utils'
 
 const SCORE_FILTER_OPTIONS: { value: WatchScore | null; label: string }[] = [
   { value: null, label: 'すべて' },
-  { value: 'good', label: WATCH_SCORE_LABELS.good },
-  { value: 'neutral', label: WATCH_SCORE_LABELS.neutral },
-  { value: 'bad', label: WATCH_SCORE_LABELS.bad },
+  ...WATCH_SCORES.map(score => ({ value: score, label: `${score}` })),
 ]
 
 export default function WatchLogsPage() {
@@ -38,7 +37,14 @@ export default function WatchLogsPage() {
               scoreFilter === option.value && 'bg-slate-900 text-white hover:bg-slate-800 hover:text-white'
             )}
           >
-            {option.label}
+            {option.value ? (
+              <span className="flex items-center gap-1">
+                <Star className="h-3 w-3 fill-current" />
+                {option.label}
+              </span>
+            ) : (
+              option.label
+            )}
           </Button>
         ))}
       </div>
