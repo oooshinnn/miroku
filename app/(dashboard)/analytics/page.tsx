@@ -8,9 +8,11 @@ import { DirectorChart } from '@/components/analytics/DirectorChart'
 import { CastChart } from '@/components/analytics/CastChart'
 import { CountryChart } from '@/components/analytics/CountryChart'
 import { TagChart } from '@/components/analytics/TagChart'
+import { ScoreChart } from '@/components/analytics/ScoreChart'
+import type { WatchScore } from '@/types/watch-log'
 
 interface AnalyticsData {
-  watchLogs: { watched_at: string; movie_id: string }[]
+  watchLogs: { watched_at: string; movie_id: string; score: number | null }[]
   moviePersons: {
     person_id: string
     movie_id: string
@@ -42,8 +44,8 @@ const fetchAnalyticsData = async (): Promise<AnalyticsData> => {
   // 視聴ログを取得
   const { data: watchLogs } = (await supabase
     .from('watch_logs')
-    .select('watched_at, movie_id')
-    .eq('user_id', user.id)) as { data: { watched_at: string; movie_id: string }[] | null }
+    .select('watched_at, movie_id, score')
+    .eq('user_id', user.id)) as { data: { watched_at: string; movie_id: string; score: number | null }[] | null }
 
   // 監督・キャスト情報を取得
   const { data: moviePersons } = (await supabase
@@ -190,25 +192,56 @@ export default function AnalyticsPage() {
   const tagData = useMemo(() => {
     if (!data?.movieTags) return []
 
-    const tagMap = new Map<string, { name: string; movies: Set<string> }>()
+    const tagMap = new Map<string, { id: string; name: string; movies: Set<string> }>()
 
     data.movieTags.forEach((mt) => {
       if (!mt.tag) return
+      const tagId = mt.tag.id
       const tagName = mt.tag.name
-      if (!tagMap.has(tagName)) {
-        tagMap.set(tagName, { name: tagName, movies: new Set() })
+      if (!tagMap.has(tagId)) {
+        tagMap.set(tagId, { id: tagId, name: tagName, movies: new Set() })
       }
-      tagMap.get(tagName)!.movies.add(mt.movie_id)
+      tagMap.get(tagId)!.movies.add(mt.movie_id)
     })
 
     return Array.from(tagMap.values())
       .map((t) => ({
+        id: t.id,
         name: t.name,
         count: t.movies.size,
       }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 10)
   }, [data?.movieTags])
+
+  // スコアデータを計算
+  const scoreData = useMemo(() => {
+    if (!data?.watchLogs) return []
+
+    // 映画ごとの最高スコアを計算
+    const movieBestScores = new Map<string, number>()
+    data.watchLogs.forEach((log) => {
+      if (log.score) {
+        const current = movieBestScores.get(log.movie_id)
+        if (!current || log.score > current) {
+          movieBestScores.set(log.movie_id, log.score)
+        }
+      }
+    })
+
+    // スコアごとの映画数を集計
+    const scoreMap = new Map<number, number>()
+    movieBestScores.forEach((score) => {
+      scoreMap.set(score, (scoreMap.get(score) || 0) + 1)
+    })
+
+    return Array.from(scoreMap.entries())
+      .map(([score, count]) => ({
+        score: score as WatchScore,
+        count,
+      }))
+      .sort((a, b) => a.score - b.score)
+  }, [data?.watchLogs])
 
   if (loading) {
     return <div className="text-center py-8">読み込み中...</div>
@@ -225,6 +258,7 @@ export default function AnalyticsPage() {
 
       <div className="space-y-6">
         <MonthlyWatchChart data={monthlyData} />
+        <ScoreChart data={scoreData} />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <CountryChart data={countryData} />
           <TagChart data={tagData} />

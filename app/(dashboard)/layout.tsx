@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { UserMenu } from '@/components/layout/UserMenu'
+import { BrowseMenu } from '@/components/layout/BrowseMenu'
 
 export default async function DashboardLayout({
   children,
@@ -26,7 +27,7 @@ export default async function DashboardLayout({
               <Link href="/movies" className="text-2xl font-bold text-slate-900">
                 MIROKU
               </Link>
-              <nav className="flex space-x-4">
+              <nav className="flex items-center space-x-4">
                 <Link
                   href="/movies"
                   className="text-slate-600 hover:text-slate-900 transition-colors"
@@ -51,6 +52,7 @@ export default async function DashboardLayout({
                 >
                   タグ
                 </Link>
+                <BrowseMenu />
                 <Link
                   href="/analytics"
                   className="text-slate-600 hover:text-slate-900 transition-colors"
