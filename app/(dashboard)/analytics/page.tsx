@@ -121,21 +121,23 @@ export default function AnalyticsPage() {
   const directorData = useMemo(() => {
     if (!data?.moviePersons) return []
 
-    const directorMap = new Map<string, { name: string; movies: Set<string> }>()
+    const directorMap = new Map<string, { id: string; name: string; movies: Set<string> }>()
 
     data.moviePersons.forEach((mp) => {
       if (mp.person.merged_into_id) return
       if (mp.role !== 'director') return
 
+      const personId = mp.person.id
       const name = mp.person.display_name
-      if (!directorMap.has(name)) {
-        directorMap.set(name, { name, movies: new Set() })
+      if (!directorMap.has(personId)) {
+        directorMap.set(personId, { id: personId, name, movies: new Set() })
       }
-      directorMap.get(name)!.movies.add(mp.movie_id)
+      directorMap.get(personId)!.movies.add(mp.movie_id)
     })
 
     return Array.from(directorMap.values())
       .map((d) => ({
+        id: d.id,
         name: d.name,
         count: d.movies.size,
       }))
@@ -147,21 +149,23 @@ export default function AnalyticsPage() {
   const castData = useMemo(() => {
     if (!data?.moviePersons) return []
 
-    const castMap = new Map<string, { name: string; movies: Set<string> }>()
+    const castMap = new Map<string, { id: string; name: string; movies: Set<string> }>()
 
     data.moviePersons.forEach((mp) => {
       if (mp.person.merged_into_id) return
       if (mp.role !== 'cast') return
 
+      const personId = mp.person.id
       const name = mp.person.display_name
-      if (!castMap.has(name)) {
-        castMap.set(name, { name, movies: new Set() })
+      if (!castMap.has(personId)) {
+        castMap.set(personId, { id: personId, name, movies: new Set() })
       }
-      castMap.get(name)!.movies.add(mp.movie_id)
+      castMap.get(personId)!.movies.add(mp.movie_id)
     })
 
     return Array.from(castMap.values())
       .map((c) => ({
+        id: c.id,
         name: c.name,
         count: c.movies.size,
       }))

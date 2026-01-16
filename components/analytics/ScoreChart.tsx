@@ -1,6 +1,6 @@
 'use client'
 
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Star } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -24,6 +24,30 @@ const SCORE_COLORS = {
 }
 
 export function ScoreChart({ data }: ScoreChartProps) {
+  const router = useRouter()
+
+  const handleClick = (score: number) => {
+    router.push(`/scores/${score}`)
+  }
+
+  const renderXAxisTick = ({ x, y, payload }: { x: number; y: number; payload: { value: string } }) => {
+    const score = parseInt(payload.value.replace('★', ''), 10)
+    return (
+      <text
+        x={x}
+        y={y + 12}
+        textAnchor="middle"
+        fill="#334155"
+        fontSize={14}
+        style={{ cursor: 'pointer' }}
+        onClick={() => handleClick(score)}
+        className="hover:fill-blue-600"
+      >
+        {payload.value}
+      </text>
+    )
+  }
+
   // 全スコア（1-5）のデータを作成（0件も含む）
   const fullData = [1, 2, 3, 4, 5].map(score => {
     const found = data.find(d => d.score === score)
@@ -74,12 +98,18 @@ export function ScoreChart({ data }: ScoreChartProps) {
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={fullData}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="label" />
+            <XAxis dataKey="label" tick={renderXAxisTick} />
             <YAxis allowDecimals={false} />
             <Tooltip
               formatter={(value) => [`${value}本`, '視聴本数']}
             />
-            <Bar dataKey="count" name="視聴本数">
+            <Bar
+              dataKey="count"
+              name="視聴本数"
+              cursor="pointer"
+              activeBar={false}
+              onClick={(_, index) => handleClick(fullData[index].score)}
+            >
               {fullData.map((entry) => (
                 <Cell
                   key={entry.score}
@@ -89,24 +119,6 @@ export function ScoreChart({ data }: ScoreChartProps) {
             </Bar>
           </BarChart>
         </ResponsiveContainer>
-
-        {/* スコア別リンク */}
-        <div className="mt-4 grid grid-cols-5 gap-2">
-          {fullData.map(({ score, count }) => (
-            <Link
-              key={score}
-              href={`/scores/${score}`}
-              className="flex flex-col items-center p-2 rounded-lg hover:bg-slate-100 transition-colors"
-            >
-              <div className="flex items-center gap-0.5 text-yellow-500">
-                {Array.from({ length: score }).map((_, i) => (
-                  <Star key={i} className="h-3 w-3 fill-current" />
-                ))}
-              </div>
-              <span className="text-sm font-medium">{count}本</span>
-            </Link>
-          ))}
-        </div>
       </CardContent>
     </Card>
   )

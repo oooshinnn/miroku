@@ -1,8 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { Calendar, ChevronRight } from 'lucide-react'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { useRouter } from 'next/navigation'
+import { ChevronRight } from 'lucide-react'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 interface MonthlyData {
@@ -15,6 +16,29 @@ interface MonthlyWatchChartProps {
 }
 
 export function MonthlyWatchChart({ data }: MonthlyWatchChartProps) {
+  const router = useRouter()
+
+  const handleClick = (month: string) => {
+    // "2024/01" -> "2024-01"
+    const monthKey = month.replace('/', '-')
+    router.push(`/months/${monthKey}`)
+  }
+
+  const renderXAxisTick = ({ x, y, payload }: { x: number; y: number; payload: { value: string } }) => (
+    <text
+      x={x}
+      y={y + 12}
+      textAnchor="middle"
+      fill="#334155"
+      fontSize={12}
+      style={{ cursor: 'pointer' }}
+      onClick={() => handleClick(payload.value)}
+      className="hover:fill-blue-600"
+    >
+      {payload.value}
+    </text>
+  )
+
   if (data.length === 0) {
     return (
       <Card>
@@ -28,9 +52,6 @@ export function MonthlyWatchChart({ data }: MonthlyWatchChartProps) {
       </Card>
     )
   }
-
-  // 最新5ヶ月のデータを取得（逆順で）
-  const recentMonths = [...data].reverse().slice(0, 5)
 
   return (
     <Card>
@@ -53,32 +74,19 @@ export function MonthlyWatchChart({ data }: MonthlyWatchChartProps) {
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={data}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="month" />
+            <XAxis dataKey="month" tick={renderXAxisTick} />
             <YAxis allowDecimals={false} />
-            <Tooltip />
-            <Legend />
-            <Bar dataKey="count" fill="#3b82f6" name="視聴本数" />
+            <Tooltip formatter={(value) => [`${value}本`, '視聴本数']} />
+            <Bar
+              dataKey="count"
+              fill="#3b82f6"
+              name="視聴本数"
+              cursor="pointer"
+              activeBar={false}
+              onClick={(_, index) => handleClick(data[index].month)}
+            />
           </BarChart>
         </ResponsiveContainer>
-
-        {/* 最新月別リンク */}
-        <div className="mt-4 grid grid-cols-5 gap-2">
-          {recentMonths.map(({ month, count }) => {
-            // "2024/01" -> "2024-01"
-            const monthKey = month.replace('/', '-')
-            return (
-              <Link
-                key={month}
-                href={`/months/${monthKey}`}
-                className="flex flex-col items-center p-2 rounded-lg hover:bg-slate-100 transition-colors"
-              >
-                <Calendar className="h-4 w-4 text-blue-500 mb-1" />
-                <span className="text-xs text-slate-600">{month}</span>
-                <span className="text-sm font-medium">{count}本</span>
-              </Link>
-            )
-          })}
-        </div>
       </CardContent>
     </Card>
   )

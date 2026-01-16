@@ -1,9 +1,11 @@
 'use client'
 
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { useRouter } from 'next/navigation'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 interface CastData {
+  id: string
   name: string
   count: number
 }
@@ -13,6 +15,31 @@ interface CastChartProps {
 }
 
 export function CastChart({ data }: CastChartProps) {
+  const router = useRouter()
+
+  const handleClick = (personId: string) => {
+    router.push(`/persons/${personId}`)
+  }
+
+  const renderYAxisTick = ({ x, y, payload }: { x: number; y: number; payload: { value: string } }) => {
+    const person = data.find((d) => d.name === payload.value)
+    return (
+      <text
+        x={x}
+        y={y}
+        dy={4}
+        textAnchor="end"
+        fill="#334155"
+        fontSize={14}
+        style={{ cursor: 'pointer' }}
+        onClick={() => person && handleClick(person.id)}
+        className="hover:fill-blue-600"
+      >
+        {payload.value}
+      </text>
+    )
+  }
+
   if (data.length === 0) {
     return (
       <Card>
@@ -38,10 +65,16 @@ export function CastChart({ data }: CastChartProps) {
           <BarChart data={data} layout="vertical">
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis type="number" allowDecimals={false} />
-            <YAxis dataKey="name" type="category" width={150} />
-            <Tooltip />
-            <Legend />
-            <Bar dataKey="count" fill="#3b82f6" name="視聴作品数" />
+            <YAxis dataKey="name" type="category" width={150} tick={renderYAxisTick} />
+            <Tooltip formatter={(value) => [`${value}本`, '視聴作品数']} />
+            <Bar
+              dataKey="count"
+              fill="#3b82f6"
+              name="視聴作品数"
+              cursor="pointer"
+              activeBar={false}
+              onClick={(_, index) => handleClick(data[index].id)}
+            />
           </BarChart>
         </ResponsiveContainer>
       </CardContent>

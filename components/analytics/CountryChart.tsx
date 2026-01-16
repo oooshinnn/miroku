@@ -1,8 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { Globe, ChevronRight } from 'lucide-react'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { useRouter } from 'next/navigation'
+import { ChevronRight } from 'lucide-react'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 interface CountryData {
@@ -15,6 +16,28 @@ interface CountryChartProps {
 }
 
 export function CountryChart({ data }: CountryChartProps) {
+  const router = useRouter()
+
+  const handleClick = (name: string) => {
+    router.push(`/countries/${encodeURIComponent(name)}`)
+  }
+
+  const renderYAxisTick = ({ x, y, payload }: { x: number; y: number; payload: { value: string } }) => (
+    <text
+      x={x}
+      y={y}
+      dy={4}
+      textAnchor="end"
+      fill="#334155"
+      fontSize={14}
+      style={{ cursor: 'pointer' }}
+      onClick={() => handleClick(payload.value)}
+      className="hover:fill-blue-600"
+    >
+      {payload.value}
+    </text>
+  )
+
   if (data.length === 0) {
     return (
       <Card>
@@ -51,29 +74,18 @@ export function CountryChart({ data }: CountryChartProps) {
           <BarChart data={data} layout="vertical">
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis type="number" allowDecimals={false} />
-            <YAxis dataKey="name" type="category" width={150} />
-            <Tooltip />
-            <Legend />
-            <Bar dataKey="count" fill="#f59e0b" name="視聴本数" />
+            <YAxis dataKey="name" type="category" width={150} tick={renderYAxisTick} />
+            <Tooltip formatter={(value) => [`${value}本`, '視聴本数']} />
+            <Bar
+              dataKey="count"
+              fill="#f59e0b"
+              name="視聴本数"
+              cursor="pointer"
+              activeBar={false}
+              onClick={(_, index) => handleClick(data[index].name)}
+            />
           </BarChart>
         </ResponsiveContainer>
-
-        {/* 国別リンク */}
-        <div className="mt-4 space-y-1">
-          {data.slice(0, 5).map(({ name, count }) => (
-            <Link
-              key={name}
-              href={`/countries/${encodeURIComponent(name)}`}
-              className="flex items-center justify-between p-2 rounded-lg hover:bg-slate-100 transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <Globe className="h-4 w-4 text-slate-500" />
-                <span className="text-sm">{name}</span>
-              </div>
-              <span className="text-sm text-slate-500">{count}本</span>
-            </Link>
-          ))}
-        </div>
       </CardContent>
     </Card>
   )
