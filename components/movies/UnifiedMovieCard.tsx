@@ -45,7 +45,7 @@ export function UnifiedMovieCard({ movie, registeredMovieId }: UnifiedMovieCardP
 
       {/* タイトル */}
       <div className="px-2 pt-2">
-        <h3 className="font-medium text-slate-900 line-clamp-2 text-sm leading-tight group-hover:text-blue-600 transition-colors">
+        <h3 className="font-medium text-slate-900 line-clamp-2 text-sm leading-tight text-balance group-hover:text-blue-600 transition-colors">
           {movie.title}
         </h3>
       </div>

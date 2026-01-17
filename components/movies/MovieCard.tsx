@@ -40,7 +40,7 @@ export function MovieCard({ movie }: MovieCardProps) {
 
       {/* タイトル */}
       <div className="px-2 pt-2">
-        <h3 className="font-medium text-slate-900 line-clamp-2 text-sm leading-tight group-hover:text-blue-600 transition-colors">
+        <h3 className="font-medium text-slate-900 line-clamp-2 text-sm leading-tight text-balance group-hover:text-blue-600 transition-colors">
           {title}
         </h3>
       </div>
@@ -54,8 +54,8 @@ export function MovieCard({ movie }: MovieCardProps) {
           </p>
           {movie.bestScore && (
             <div className="flex items-center gap-0.5 text-yellow-500">
-              <Star className="h-3.5 w-3.5 fill-current" />
-              <span className="text-xs font-medium">{movie.bestScore}</span>
+              <Star className="h-3.5 w-3.5 fill-current" aria-hidden="true" />
+              <span className="text-xs font-medium tabular-nums">{movie.bestScore}</span>
             </div>
           )}
         </div>

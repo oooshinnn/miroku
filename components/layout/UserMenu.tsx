@@ -39,16 +39,16 @@ export function UserMenu({ displayName, email }: UserMenuProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="flex items-center gap-1">
-          <User className="h-4 w-4" />
+        <Button variant="ghost" size="sm" className="flex items-center gap-1" aria-label={`${name}のメニューを開く`}>
+          <User className="h-4 w-4" aria-hidden="true" />
           <span>{name}</span>
-          <ChevronDown className="h-3 w-3" />
+          <ChevronDown className="h-3 w-3" aria-hidden="true" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
         <DropdownMenuItem asChild>
           <Link href="/settings" className="flex items-center gap-2 cursor-pointer">
-            <Settings className="h-4 w-4" />
+            <Settings className="h-4 w-4" aria-hidden="true" />
             設定
           </Link>
         </DropdownMenuItem>
@@ -59,9 +59,9 @@ export function UserMenu({ displayName, email }: UserMenuProps) {
           className="flex items-center gap-2 cursor-pointer text-red-600"
         >
           {isLoggingOut ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
           ) : (
-            <LogOut className="h-4 w-4" />
+            <LogOut className="h-4 w-4" aria-hidden="true" />
           )}
           {isLoggingOut ? 'ログアウト中...' : 'ログアウト'}
         </DropdownMenuItem>

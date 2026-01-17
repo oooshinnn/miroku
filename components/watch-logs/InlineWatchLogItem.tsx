@@ -78,7 +78,7 @@ export function InlineWatchLogItem({ watchLog, onUpdate, onDelete }: InlineWatch
           )}
         </div>
         {watchLog.memo && (
-          <p className="text-slate-600 text-sm mt-1 line-clamp-2">{watchLog.memo}</p>
+          <p className="text-slate-600 text-sm mt-1 line-clamp-2 text-pretty">{watchLog.memo}</p>
         )}
       </div>
 
@@ -88,8 +88,9 @@ export function InlineWatchLogItem({ watchLog, onUpdate, onDelete }: InlineWatch
           size="icon"
           className="h-8 w-8"
           onClick={() => setIsEditing(true)}
+          aria-label="視聴ログを編集"
         >
-          <Edit2 className="h-4 w-4" />
+          <Edit2 className="h-4 w-4" aria-hidden="true" />
         </Button>
         <Button
           variant="ghost"
@@ -97,8 +98,9 @@ export function InlineWatchLogItem({ watchLog, onUpdate, onDelete }: InlineWatch
           className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
           onClick={handleDelete}
           disabled={isDeleting}
+          aria-label="視聴ログを削除"
         >
-          <Trash2 className="h-4 w-4" />
+          <Trash2 className="h-4 w-4" aria-hidden="true" />
         </Button>
       </div>
     </div>

@@ -121,8 +121,9 @@ export function MovieTagSelector({ movieId, initialTags = [] }: MovieTagSelector
             onClick={() => handleRemoveTag(tag.id)}
             disabled={loading}
             className="p-0.5 rounded-full hover:bg-slate-200 text-slate-500 hover:text-slate-700 disabled:opacity-50"
+            aria-label={`${tag.name}タグを削除`}
           >
-            <X className="h-3 w-3" />
+            <X className="h-3 w-3" aria-hidden="true" />
           </button>
         </div>
       ))}
@@ -159,11 +160,12 @@ export function MovieTagSelector({ movieId, initialTags = [] }: MovieTagSelector
                       key={color}
                       type="button"
                       onClick={() => setNewTagColor(color)}
-                      className={`w-6 h-6 rounded-full transition-transform ${
+                      className={`size-6 rounded-full transition-transform ${
                         newTagColor === color ? 'ring-2 ring-offset-1 ring-slate-400 scale-110' : ''
                       }`}
                       style={{ backgroundColor: color }}
                       disabled={loading}
+                      aria-label={`色を${color}に設定`}
                     />
                   ))}
                 </div>

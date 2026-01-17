@@ -79,8 +79,8 @@ export function MovieFilter({
               />
             </div>
             {hasActiveFilters && (
-              <Button variant="outline" onClick={onReset} size="icon">
-                <X className="h-4 w-4" />
+              <Button variant="outline" onClick={onReset} size="icon" aria-label="フィルタをリセット">
+                <X className="h-4 w-4" aria-hidden="true" />
               </Button>
             )}
           </div>
