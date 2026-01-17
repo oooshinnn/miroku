@@ -1,3 +1,4 @@
+import type { PostgrestError } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
@@ -9,6 +10,7 @@ import { MovieActions } from './MovieActions'
 import { MovieCreditsSection } from './MovieCreditsSection'
 import { MovieOverview } from './MovieOverview'
 import { MovieTagSelector } from '@/components/movies/MovieTagSelector'
+import type { Movie } from '@/types/movie'
 
 interface MovieDetailPageProps {
   params: Promise<{ id: string }>
@@ -23,7 +25,7 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
     .from('movies')
     .select('*')
     .eq('id', id)
-    .single()) as { data: any; error: any }
+    .single()) as { data: Movie | null; error: PostgrestError | null }
 
   if (error || !movie) {
     notFound()

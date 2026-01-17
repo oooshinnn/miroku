@@ -6,6 +6,19 @@ import { Check, X, Plus } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
+import type { PostgrestError } from '@supabase/supabase-js'
+
+interface PersonInsertData {
+  user_id: string
+  display_name: string
+}
+
+interface MoviePersonInsertData {
+  movie_id: string
+  person_id: string
+  role: 'director' | 'writer' | 'cast'
+  cast_order?: number
+}
 
 interface PersonData {
   id: string
@@ -54,34 +67,38 @@ export function EditablePersonList({ persons, maxDisplay, movieId, role, onPerso
         personId = existingPerson.id
       } else {
         // 新しい人物を作成
+        const insertData: PersonInsertData = { user_id: user.id, display_name: newName.trim() }
         const { data: newPerson, error: personError } = await supabase
           .from('persons')
-          .insert({ user_id: user.id, display_name: newName.trim() } as any)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .insert(insertData as any)
           .select()
-          .single()
+          .single() as { data: { id: string } | null; error: PostgrestError | null }
 
         if (personError || !newPerson) throw personError || new Error('Failed to create person')
-        personId = (newPerson as any).id
+        personId = newPerson.id
       }
 
       // 映画との関連を作成
       const castOrder = role === 'cast' ? personList.length : undefined
+      const insertData: MoviePersonInsertData = {
+        movie_id: movieId,
+        person_id: personId,
+        role,
+        cast_order: castOrder,
+      }
       const { data: moviePerson, error: linkError } = await supabase
         .from('movie_persons')
-        .insert({
-          movie_id: movieId,
-          person_id: personId,
-          role,
-          cast_order: castOrder,
-        } as any)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .insert(insertData as any)
         .select()
-        .single()
+        .single() as { data: { id: string } | null; error: PostgrestError | null }
 
       if (linkError || !moviePerson) throw linkError || new Error('Failed to link person')
 
       // ローカル状態を更新
       setPersonList(prev => [...prev, {
-        id: (moviePerson as any).id,
+        id: moviePerson.id,
         personId,
         displayName: newName.trim(),
       }])

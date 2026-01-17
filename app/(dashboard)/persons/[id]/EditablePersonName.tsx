@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Edit2, Check, X } from 'lucide-react'
+import type { PostgrestError } from '@supabase/supabase-js'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
@@ -28,8 +29,8 @@ export function EditablePersonName({ personId, initialName }: EditablePersonName
     setSaving(true)
     try {
       const query = supabase.from('persons')
-      const result = await (query as any).update({ display_name: editValue.trim() }).eq('id', personId)
-      const { error } = result
+      // @ts-expect-error - Supabase type inference issue with update
+      const { error } = await query.update({ display_name: editValue.trim() }).eq('id', personId) as { error: PostgrestError | null }
 
       if (error) throw error
 

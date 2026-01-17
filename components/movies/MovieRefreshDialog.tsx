@@ -6,7 +6,27 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Checkbox } from '@/components/ui/checkbox'
 import { createClient } from '@/lib/supabase/client'
+import type { PostgrestError } from '@supabase/supabase-js'
 import type { TMDBMovieDetails, TMDBCredits } from '@/lib/tmdb/types'
+
+interface MovieUpdateData {
+  tmdb_title?: string
+  tmdb_release_date?: string | null
+  tmdb_production_countries?: string[]
+}
+
+interface PersonInsert {
+  user_id: string
+  tmdb_person_id: number
+  display_name: string
+}
+
+interface MoviePersonInsert {
+  movie_id: string
+  person_id: string
+  role: 'director' | 'writer' | 'cast'
+  cast_order?: number | null
+}
 
 interface CurrentData {
   title: string | null
@@ -123,7 +143,7 @@ export function MovieRefreshDialog({ movieId, tmdbMovieId, currentData, onRefres
       if (!user) throw new Error('ログインが必要です')
 
       // 映画の基本情報を更新
-      const movieUpdates: Record<string, any> = {}
+      const movieUpdates: MovieUpdateData = {}
       if (selectedFields.has('title')) {
         movieUpdates.tmdb_title = newData.title
       }
@@ -137,7 +157,7 @@ export function MovieRefreshDialog({ movieId, tmdbMovieId, currentData, onRefres
       if (Object.keys(movieUpdates).length > 0) {
         const updateQuery = supabase.from('movies')
         // @ts-expect-error - Supabase type inference issue with update
-        const updateResult: any = await updateQuery.update(movieUpdates).eq('id', movieId).select()
+        const updateResult = await updateQuery.update(movieUpdates).eq('id', movieId).select() as { data: unknown[] | null; error: PostgrestError | null }
         const { data: updatedData, error: movieError } = updateResult
 
         if (movieError) {
@@ -173,7 +193,7 @@ export function MovieRefreshDialog({ movieId, tmdbMovieId, currentData, onRefres
             .select('id, display_name')
             .eq('user_id', user.id)
             .eq('tmdb_person_id', person.id)
-            .maybeSingle()) as { data: { id: string; display_name: string } | null; error: any }
+            .maybeSingle()) as { data: { id: string; display_name: string } | null; error: PostgrestError | null }
 
           if (findError) {
             continue
@@ -191,15 +211,17 @@ export function MovieRefreshDialog({ movieId, tmdbMovieId, currentData, onRefres
               await personQuery.update({ display_name: person.name }).eq('id', personId)
             }
           } else {
+            const personInsertData: PersonInsert = {
+              user_id: user.id,
+              tmdb_person_id: person.id,
+              display_name: person.name,
+            }
             const { data: newPerson, error: insertError } = (await supabase
               .from('persons')
-              .insert({
-                user_id: user.id,
-                tmdb_person_id: person.id,
-                display_name: person.name,
-              } as any)
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              .insert(personInsertData as any)
               .select('id')
-              .single()) as { data: { id: string } | null; error: any }
+              .single()) as { data: { id: string } | null; error: PostgrestError | null }
 
             if (insertError || !newPerson) {
               continue
@@ -208,14 +230,16 @@ export function MovieRefreshDialog({ movieId, tmdbMovieId, currentData, onRefres
           }
 
           const castOrder = role === 'cast' ? person.order : null
+          const moviePersonInsertData: MoviePersonInsert = {
+            movie_id: movieId,
+            person_id: personId,
+            role,
+            cast_order: castOrder,
+          }
           await supabase
             .from('movie_persons')
-            .insert({
-              movie_id: movieId,
-              person_id: personId,
-              role,
-              cast_order: castOrder,
-            } as any)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            .insert(moviePersonInsertData as any)
         }
       }
 

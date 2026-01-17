@@ -1,6 +1,7 @@
 'use client'
 
 import useSWR from 'swr'
+import type { PostgrestError } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 import type { WatchLog, WatchLogInsert, WatchLogUpdate, WatchLogWithMovie, WatchScore } from '@/types/watch-log'
 
@@ -38,7 +39,7 @@ const fetchWatchLogs = async (options: UseWatchLogsOptions): Promise<WatchLogWit
     query = query.eq('score', scoreFilter)
   }
 
-  const { data, error } = await query as { data: WatchLogWithMovie[] | null; error: any }
+  const { data, error } = await query as { data: WatchLogWithMovie[] | null; error: PostgrestError | null }
 
   if (error) throw error
   return data || []
@@ -66,12 +67,14 @@ export function useWatchLogs(options: UseWatchLogsOptions = {}) {
       throw new Error('ユーザーがログインしていません')
     }
 
+    const watchLogData: WatchLogInsert = {
+      ...watchLog,
+      user_id: user.id,
+    }
     const { data, error } = await supabase
       .from('watch_logs')
-      .insert({
-        ...watchLog,
-        user_id: user.id,
-      } as any)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase型推論の問題を回避
+      .insert(watchLogData as any)
       .select()
       .single()
 
@@ -86,8 +89,8 @@ export function useWatchLogs(options: UseWatchLogsOptions = {}) {
   const updateWatchLog = async (id: string, updates: Omit<WatchLogUpdate, 'user_id'>) => {
     const query = supabase.from('watch_logs')
     // @ts-expect-error - Supabase type inference issue with update
-    const result: any = await query.update(updates as any).eq('id', id).select().single()
-    const { data, error } = result as { data: WatchLog | null; error: any }
+    const result = await query.update(updates as WatchLogUpdate).eq('id', id).select().single()
+    const { data, error } = result as { data: WatchLog | null; error: PostgrestError | null }
 
     if (error) {
       throw error

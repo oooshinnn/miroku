@@ -1,10 +1,22 @@
 'use client'
 
 import useSWR, { mutate } from 'swr'
+import type { PostgrestError } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 import type { Movie, MovieInsert, Person, PersonInsert, MoviePersonInsert } from '@/types/movie'
 import type { Tag } from '@/types/tag'
 import type { TMDBMovie, TMDBMovieDetails, TMDBCredits } from '@/lib/tmdb/types'
+
+// movie_tags テーブルのインサート型
+interface MovieTagInsert {
+  movie_id: string
+  tag_id: string
+}
+
+// movie_tags から tag を結合した結果の型
+interface MovieTagWithTag {
+  tag: Tag | null
+}
 
 // SWR キャッシュキー
 const MOVIES_CACHE_KEY = 'movies'
@@ -64,14 +76,15 @@ export function useMovies() {
 
     // 詳細情報から製作国を追加
     if (options?.details?.production_countries?.length) {
-      (movieData as any).tmdb_production_countries = options.details.production_countries.map(c => c.name)
+      (movieData as MovieInsert & { tmdb_production_countries?: string[] }).tmdb_production_countries = options.details.production_countries.map(c => c.name)
     }
 
     const { data: newMovie, error: movieError } = (await supabase
       .from('movies')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase型推論の問題を回避
       .insert(movieData as any)
       .select()
-      .single()) as { data: Movie | null; error: any }
+      .single()) as { data: Movie | null; error: PostgrestError | null }
 
     if (movieError || !newMovie) {
       throw movieError || new Error('Failed to create movie')
@@ -98,11 +111,13 @@ export function useMovies() {
     for (const director of allDirectors) {
       const personId = await findOrCreatePerson(userId, director.id, director.name)
       if (personId) {
-        await supabase.from('movie_persons').insert({
+        const moviePersonData: MoviePersonInsert = {
           movie_id: movieId,
           person_id: personId,
           role: 'director',
-        } as any)
+        }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase型推論の問題を回避
+        await supabase.from('movie_persons').insert(moviePersonData as any)
       }
     }
 
@@ -110,11 +125,13 @@ export function useMovies() {
     for (const writer of allWriters) {
       const personId = await findOrCreatePerson(userId, writer.id, writer.name)
       if (personId) {
-        await supabase.from('movie_persons').insert({
+        const moviePersonData: MoviePersonInsert = {
           movie_id: movieId,
           person_id: personId,
           role: 'writer',
-        } as any)
+        }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase型推論の問題を回避
+        await supabase.from('movie_persons').insert(moviePersonData as any)
       }
     }
 
@@ -122,12 +139,14 @@ export function useMovies() {
     for (const castMember of allCast) {
       const personId = await findOrCreatePerson(userId, castMember.id, castMember.name)
       if (personId) {
-        await supabase.from('movie_persons').insert({
+        const moviePersonData: MoviePersonInsert = {
           movie_id: movieId,
           person_id: personId,
           role: 'cast',
           cast_order: castMember.order,
-        } as any)
+        }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase型推論の問題を回避
+        await supabase.from('movie_persons').insert(moviePersonData as any)
       }
     }
   }
@@ -157,9 +176,10 @@ export function useMovies() {
 
     const { data: newPerson, error } = await supabase
       .from('persons')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase型推論の問題を回避
       .insert(personData as any)
       .select()
-      .single() as { data: Person | null; error: any }
+      .single() as { data: Person | null; error: PostgrestError | null }
 
     if (error || !newPerson) {
       return null
@@ -230,9 +250,10 @@ export function useMovies() {
 
         const { data: newPerson, error: personError } = (await supabase
           .from('persons')
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase型推論の問題を回避
           .insert(personData as any)
           .select()
-          .single()) as { data: Person | null; error: any }
+          .single()) as { data: Person | null; error: PostgrestError | null }
 
         if (personError || !newPerson) continue
         personId = newPerson.id
@@ -244,6 +265,7 @@ export function useMovies() {
         role: 'director',
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase型推論の問題を回避
       await supabase.from('movie_persons').insert(moviePersonData as any)
     }
 
@@ -269,9 +291,10 @@ export function useMovies() {
 
         const { data: newPerson, error: personError } = (await supabase
           .from('persons')
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase型推論の問題を回避
           .insert(personData as any)
           .select()
-          .single()) as { data: Person | null; error: any }
+          .single()) as { data: Person | null; error: PostgrestError | null }
 
         if (personError || !newPerson) continue
         personId = newPerson.id
@@ -283,6 +306,7 @@ export function useMovies() {
         role: 'writer',
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase型推論の問題を回避
       await supabase.from('movie_persons').insert(moviePersonData as any)
     }
 
@@ -308,9 +332,10 @@ export function useMovies() {
 
         const { data: newPerson, error: personError } = (await supabase
           .from('persons')
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase型推論の問題を回避
           .insert(personData as any)
           .select()
-          .single()) as { data: Person | null; error: any }
+          .single()) as { data: Person | null; error: PostgrestError | null }
 
         if (personError || !newPerson) continue
         personId = newPerson.id
@@ -323,6 +348,7 @@ export function useMovies() {
         cast_order: castMember.order,
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase型推論の問題を回避
       await supabase.from('movie_persons').insert(moviePersonData as any)
     }
 
@@ -346,13 +372,15 @@ export function useMovies() {
       return []
     }
 
-    return data.map((item: any) => item.tag).filter(Boolean)
+    return data.map((item: MovieTagWithTag) => item.tag).filter((tag): tag is Tag => tag !== null)
   }
 
   const addTagToMovie = async (movieId: string, tagId: string) => {
+    const movieTagData: MovieTagInsert = { movie_id: movieId, tag_id: tagId }
     const { error } = await supabase
       .from('movie_tags')
-      .insert({ movie_id: movieId, tag_id: tagId } as any)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase型推論の問題を回避
+      .insert(movieTagData as any)
 
     if (error) {
       throw error
@@ -398,9 +426,10 @@ export function useMovies() {
 
     const { data: newMovie, error: movieError } = (await supabase
       .from('movies')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase型推論の問題を回避
       .insert(movieData as any)
       .select()
-      .single()) as { data: Movie | null; error: any }
+      .single()) as { data: Movie | null; error: PostgrestError | null }
 
     if (movieError || !newMovie) {
       throw movieError || new Error('映画の作成に失敗しました')
@@ -430,9 +459,10 @@ export function useMovies() {
 
         const { data: newPerson, error: personError } = (await supabase
           .from('persons')
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase型推論の問題を回避
           .insert(personData as any)
           .select()
-          .single()) as { data: Person | null; error: any }
+          .single()) as { data: Person | null; error: PostgrestError | null }
 
         if (personError || !newPerson) {
           throw personError || new Error('監督の作成に失敗しました')
@@ -446,6 +476,7 @@ export function useMovies() {
         role: 'director',
       }
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase型推論の問題を回避
       await supabase.from('movie_persons').insert(moviePersonData as any)
     }
 

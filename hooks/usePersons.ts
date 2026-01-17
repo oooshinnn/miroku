@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react'
 import useSWR from 'swr'
+import type { PostgrestError } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 import type { Person } from '@/types/movie'
 
@@ -25,7 +26,7 @@ const fetchPersonsData = async (): Promise<PersonsData> => {
     .from('persons')
     .select('*')
     .is('merged_into_id', null)
-    .order('display_name', { ascending: true })) as { data: Person[] | null; error: any }
+    .order('display_name', { ascending: true })) as { data: Person[] | null; error: PostgrestError | null }
 
   if (error) throw error
 
@@ -90,8 +91,8 @@ export function usePersons() {
   const updatePerson = async (id: string, displayName: string) => {
     const query = supabase.from('persons')
     // @ts-expect-error - Supabase type inference issue with update
-    const result: any = await query.update({ display_name: displayName }).eq('id', id)
-    const { error } = result as { error: any }
+    const result = await query.update({ display_name: displayName }).eq('id', id)
+    const { error } = result as { error: PostgrestError | null }
 
     if (error) {
       throw error
@@ -134,8 +135,8 @@ export function usePersons() {
     // 残りのmovie_personsのperson_idを更新
     const mpQuery = supabase.from('movie_persons')
     // @ts-expect-error - Supabase type inference issue with update
-    const mpResult: any = await mpQuery.update({ person_id: targetId }).eq('person_id', sourceId)
-    const { error: updateError } = mpResult as { error: any }
+    const mpResult = await mpQuery.update({ person_id: targetId }).eq('person_id', sourceId)
+    const { error: updateError } = mpResult as { error: PostgrestError | null }
 
     if (updateError) {
       throw updateError
@@ -144,8 +145,8 @@ export function usePersons() {
     // ソースのpersonをマージ済みとしてマーク
     const pQuery = supabase.from('persons')
     // @ts-expect-error - Supabase type inference issue with update
-    const pResult: any = await pQuery.update({ merged_into_id: targetId }).eq('id', sourceId)
-    const { error: mergeError } = pResult as { error: any }
+    const pResult = await pQuery.update({ merged_into_id: targetId }).eq('id', sourceId)
+    const { error: mergeError } = pResult as { error: PostgrestError | null }
 
     if (mergeError) {
       throw mergeError
@@ -158,8 +159,8 @@ export function usePersons() {
     // マージ状態を解除
     const query = supabase.from('persons')
     // @ts-expect-error - Supabase type inference issue with update
-    const result: any = await query.update({ merged_into_id: null }).eq('id', personId)
-    const { error } = result as { error: any }
+    const result = await query.update({ merged_into_id: null }).eq('id', personId)
+    const { error } = result as { error: PostgrestError | null }
 
     if (error) {
       throw error
@@ -172,7 +173,7 @@ export function usePersons() {
     const { data, error } = (await supabase
       .from('persons')
       .select('*')
-      .eq('merged_into_id', targetId)) as { data: Person[] | null; error: any }
+      .eq('merged_into_id', targetId)) as { data: Person[] | null; error: PostgrestError | null }
 
     if (error) {
       console.error('Failed to get merged persons:', error)

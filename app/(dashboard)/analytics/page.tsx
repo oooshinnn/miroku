@@ -59,7 +59,7 @@ const fetchAnalyticsData = async (): Promise<AnalyticsData> => {
         display_name,
         merged_into_id
       )
-    `)) as { data: any[] | null }
+    `)) as { data: AnalyticsData['moviePersons'] | null }
 
   // 映画情報を取得（製作国用）
   const { data: movies } = (await supabase
@@ -73,7 +73,7 @@ const fetchAnalyticsData = async (): Promise<AnalyticsData> => {
     .select(`
       movie_id,
       tag:tags(id, name)
-    `)) as { data: any[] | null }
+    `)) as { data: AnalyticsData['movieTags'] | null }
 
   return {
     watchLogs: watchLogs || [],
@@ -115,7 +115,7 @@ export default function AnalyticsPage() {
         count: movieIds.size,
       }))
       .sort((a, b) => a.month.localeCompare(b.month))
-  }, [data?.watchLogs])
+  }, [data])
 
   // 監督データを計算
   const directorData = useMemo(() => {
@@ -143,7 +143,7 @@ export default function AnalyticsPage() {
       }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 10)
-  }, [data?.moviePersons])
+  }, [data])
 
   // キャストデータを計算
   const castData = useMemo(() => {
@@ -171,7 +171,7 @@ export default function AnalyticsPage() {
       }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 10)
-  }, [data?.moviePersons])
+  }, [data])
 
   // 製作国データを計算
   const countryData = useMemo(() => {
@@ -190,7 +190,7 @@ export default function AnalyticsPage() {
       .map(([name, count]) => ({ name, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 10)
-  }, [data?.movies])
+  }, [data])
 
   // タグデータを計算
   const tagData = useMemo(() => {
@@ -216,7 +216,7 @@ export default function AnalyticsPage() {
       }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 10)
-  }, [data?.movieTags])
+  }, [data])
 
   // スコアデータを計算
   const scoreData = useMemo(() => {
@@ -245,7 +245,7 @@ export default function AnalyticsPage() {
         count,
       }))
       .sort((a, b) => a.score - b.score)
-  }, [data?.watchLogs])
+  }, [data])
 
   if (loading) {
     return <div className="text-center py-8">読み込み中...</div>

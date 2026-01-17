@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import type { PostgrestError } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -35,15 +36,15 @@ export function MovieEditClient({ movie }: MovieEditClientProps) {
 
   const onSubmit = async (data: MovieFormData) => {
     try {
-      const query = supabase.from('movies')
-      // @ts-expect-error - Supabase type inference issue with update
-      const result: any = await query.update({
+      const updateData = {
         custom_title: data.custom_title || null,
         custom_poster_url: data.custom_poster_url || null,
         custom_release_date: data.custom_release_date || null,
         custom_production_countries: data.custom_production_countries || null,
-      }).eq('id', movie.id)
-      const { error } = result as { error: any }
+      }
+      const query = supabase.from('movies')
+      // @ts-expect-error - Supabase type inference issue with update
+      const { error } = await query.update(updateData).eq('id', movie.id) as { error: PostgrestError | null }
 
       if (error) {
         throw error

@@ -1,6 +1,8 @@
+import type { PostgrestError } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import { WatchLogEditClient } from './WatchLogEditClient'
+import type { WatchLog } from '@/types/watch-log'
 
 interface EditWatchLogPageProps {
   params: Promise<{ id: string }>
@@ -14,7 +16,7 @@ export default async function EditWatchLogPage({ params }: EditWatchLogPageProps
     .from('watch_logs')
     .select('*')
     .eq('id', id)
-    .single()) as { data: any; error: any }
+    .single()) as { data: WatchLog | null; error: PostgrestError | null }
 
   if (error || !watchLog) {
     notFound()

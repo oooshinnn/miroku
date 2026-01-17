@@ -14,6 +14,17 @@ interface PersonData {
   castOrder?: number
 }
 
+interface MoviePersonWithPerson {
+  id: string
+  role: string
+  cast_order: number | null
+  person: {
+    id: string
+    display_name: string
+    tmdb_person_id: number | null
+  }
+}
+
 interface MovieCreditsSectionProps {
   movieId: string
   tmdbMovieId: number | null
@@ -61,33 +72,35 @@ export function MovieCreditsSection({ movieId, tmdbMovieId }: MovieCreditsSectio
         return 0
       }
 
-      const directorsData = moviePersons
-        ?.filter((mp: any) => mp.role === 'director')
-        .map((mp: any) => ({
+      const typedMoviePersons = moviePersons as MoviePersonWithPerson[]
+
+      const directorsData = typedMoviePersons
+        ?.filter((mp) => mp.role === 'director')
+        .map((mp) => ({
           id: mp.id,
           personId: mp.person.id,
           displayName: mp.person.display_name,
           tmdbPersonId: mp.person.tmdb_person_id,
         })) || []
 
-      const writersData = moviePersons
-        ?.filter((mp: any) => mp.role === 'writer')
-        .map((mp: any) => ({
+      const writersData = typedMoviePersons
+        ?.filter((mp) => mp.role === 'writer')
+        .map((mp) => ({
           id: mp.id,
           personId: mp.person.id,
           displayName: mp.person.display_name,
           tmdbPersonId: mp.person.tmdb_person_id,
         })) || []
 
-      const castData = moviePersons
-        ?.filter((mp: any) => mp.role === 'cast')
-        .sort((a: any, b: any) => (a.cast_order || 999) - (b.cast_order || 999))
-        .map((mp: any) => ({
+      const castData = typedMoviePersons
+        ?.filter((mp) => mp.role === 'cast')
+        .sort((a, b) => (a.cast_order || 999) - (b.cast_order || 999))
+        .map((mp) => ({
           id: mp.id,
           personId: mp.person.id,
           displayName: mp.person.display_name,
           tmdbPersonId: mp.person.tmdb_person_id,
-          castOrder: mp.cast_order,
+          castOrder: mp.cast_order ?? undefined,
         })) || []
 
       setDirectors(directorsData)

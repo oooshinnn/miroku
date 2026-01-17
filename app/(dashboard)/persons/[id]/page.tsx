@@ -1,3 +1,4 @@
+import type { PostgrestError } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
@@ -7,6 +8,22 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { EditablePersonName } from './EditablePersonName'
 import type { Person } from '@/types/movie'
+
+interface MovieInfo {
+  id: string
+  tmdb_title: string | null
+  custom_title: string | null
+  tmdb_poster_path: string | null
+  custom_poster_url: string | null
+  tmdb_release_date: string | null
+  custom_release_date: string | null
+}
+
+interface MoviePersonWithMovie {
+  role: string
+  cast_order: number | null
+  movie: MovieInfo
+}
 
 interface PersonDetailPageProps {
   params: Promise<{ id: string }>
@@ -29,7 +46,7 @@ export default async function PersonDetailPage({ params }: PersonDetailPageProps
     .from('persons')
     .select('*')
     .eq('id', id)
-    .single() as { data: Person | null; error: any }
+    .single() as { data: Person | null; error: PostgrestError | null }
 
   if (error || !person) {
     notFound()
@@ -55,14 +72,16 @@ export default async function PersonDetailPage({ params }: PersonDetailPageProps
     .order('cast_order', { ascending: true })
 
   // 映画をロール別に分類
-  const moviesByRole: Record<string, any[]> = {
+  const moviesByRole: Record<string, MovieInfo[]> = {
     director: [],
     writer: [],
     cast: [],
   }
 
-  if (moviePersons) {
-    for (const mp of moviePersons as any[]) {
+  const typedMoviePersons = moviePersons as MoviePersonWithMovie[] | null
+
+  if (typedMoviePersons) {
+    for (const mp of typedMoviePersons) {
       if (mp.movie && mp.role) {
         moviesByRole[mp.role]?.push(mp.movie)
       }
@@ -70,7 +89,7 @@ export default async function PersonDetailPage({ params }: PersonDetailPageProps
   }
 
   const totalMovies = new Set(
-    moviePersons?.map((mp: any) => mp.movie?.id).filter(Boolean) || []
+    typedMoviePersons?.map((mp) => mp.movie?.id).filter(Boolean) || []
   ).size
 
   return (
@@ -115,7 +134,7 @@ export default async function PersonDetailPage({ params }: PersonDetailPageProps
               {roleLabels[role]}として ({movies.length})
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-              {movies.map((movie: any) => {
+              {movies.map((movie) => {
                 const title = movie.custom_title || movie.tmdb_title || '不明'
                 const posterPath = movie.custom_poster_url ||
                   (movie.tmdb_poster_path ? `${IMAGE_BASE_URL}${movie.tmdb_poster_path}` : null)

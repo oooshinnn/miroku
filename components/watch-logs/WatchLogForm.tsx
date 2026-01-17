@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/select'
 import { StarRating } from '@/components/ui/star-rating'
 import { WATCH_METHOD_LABELS } from '@/types/watch-log'
-import type { WatchScore } from '@/types/watch-log'
+import type { WatchScore, WatchMethod } from '@/types/watch-log'
 
 interface WatchLogFormProps {
   defaultValues?: Partial<WatchLogFormData>
@@ -66,7 +66,7 @@ export function WatchLogForm({
         <Label htmlFor="watch_method">視聴方法 *</Label>
         <Select
           value={watchMethod}
-          onValueChange={(value) => setValue('watch_method', value as any)}
+          onValueChange={(value) => setValue('watch_method', value as WatchMethod)}
           disabled={isSubmitting}
         >
           <SelectTrigger>

@@ -26,6 +26,12 @@ interface Person {
   created_at: string
 }
 
+interface MoviePersonLink {
+  id: string
+  movie_id: string
+  role: string
+}
+
 async function main() {
   console.log('=== 重複人物のクリーンアップ ===\n')
 
@@ -72,7 +78,7 @@ async function main() {
   let mergedCount = 0
   let deletedLinksCount = 0
 
-  for (const [key, persons] of duplicateGroups) {
+  for (const [_key, persons] of duplicateGroups) {
     // 最初の人物を正規のものとして残す（最も古いレコード）
     const [primary, ...duplicates] = persons
 
@@ -87,7 +93,7 @@ async function main() {
       .eq('person_id', primary.id)
 
     const primarySet = new Set(
-      (primaryLinks || []).map((l: any) => `${l.movie_id}_${l.role}`)
+      (primaryLinks || []).map((l: MoviePersonLink) => `${l.movie_id}_${l.role}`)
     )
 
     for (const dup of duplicates) {
@@ -99,10 +105,10 @@ async function main() {
 
       if (dupLinks && dupLinks.length > 0) {
         // 正規に既に存在する組み合わせは削除
-        const toDelete = dupLinks.filter((l: any) =>
+        const toDelete = dupLinks.filter((l: MoviePersonLink) =>
           primarySet.has(`${l.movie_id}_${l.role}`)
         )
-        const toUpdate = dupLinks.filter((l: any) =>
+        const toUpdate = dupLinks.filter((l: MoviePersonLink) =>
           !primarySet.has(`${l.movie_id}_${l.role}`)
         )
 
@@ -110,7 +116,7 @@ async function main() {
           await supabase
             .from('movie_persons')
             .delete()
-            .in('id', toDelete.map((l: any) => l.id))
+            .in('id', toDelete.map((l: MoviePersonLink) => l.id))
           deletedLinksCount += toDelete.length
         }
 
@@ -118,10 +124,10 @@ async function main() {
           await supabase
             .from('movie_persons')
             .update({ person_id: primary.id })
-            .in('id', toUpdate.map((l: any) => l.id))
+            .in('id', toUpdate.map((l: MoviePersonLink) => l.id))
 
           // 正規のセットに追加
-          toUpdate.forEach((l: any) => {
+          toUpdate.forEach((l: MoviePersonLink) => {
             primarySet.add(`${l.movie_id}_${l.role}`)
           })
         }

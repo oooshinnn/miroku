@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { WatchLogForm } from '@/components/watch-logs/WatchLogForm'
 import { useWatchLogs } from '@/hooks/useWatchLogs'
 import { useMovies } from '@/hooks/useMovies'
@@ -23,13 +23,8 @@ export default function NewWatchLogPage() {
 
   const { addWatchLog } = useWatchLogs()
   const { movies, loading: moviesLoading } = useMovies()
-  const [selectedMovieId, setSelectedMovieId] = useState<string>(movieIdParam || '')
-
-  useEffect(() => {
-    if (movieIdParam) {
-      setSelectedMovieId(movieIdParam)
-    }
-  }, [movieIdParam])
+  // movieIdParam を初期値として使用（useEffect での同期は不要）
+  const [selectedMovieId, setSelectedMovieId] = useState<string>(() => movieIdParam || '')
 
   const handleSubmit = async (data: WatchLogFormData) => {
     try {

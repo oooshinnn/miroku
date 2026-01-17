@@ -3,6 +3,7 @@
 import { useMemo } from 'react'
 import Link from 'next/link'
 import useSWR from 'swr'
+import type { PostgrestError } from '@supabase/supabase-js'
 import { Calendar, ChevronRight } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { createClient } from '@/lib/supabase/client'
@@ -18,7 +19,7 @@ const fetchMonthlyData = async (): Promise<MonthData[]> => {
   const { data, error } = await supabase
     .from('watch_logs')
     .select('watched_at, movie_id')
-    .order('watched_at', { ascending: false }) as { data: { watched_at: string; movie_id: string }[] | null; error: any }
+    .order('watched_at', { ascending: false }) as { data: { watched_at: string; movie_id: string }[] | null; error: PostgrestError | null }
 
   if (error) throw error
 

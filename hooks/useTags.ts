@@ -1,6 +1,7 @@
 'use client'
 
 import useSWR from 'swr'
+import type { PostgrestError } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 import type { Tag, TagInsert, TagUpdate } from '@/types/tag'
 
@@ -39,14 +40,16 @@ export function useTags() {
       throw new Error('ユーザーがログインしていません')
     }
 
+    const tagData: TagInsert = {
+      ...tag,
+      user_id: user.id,
+    }
     const { data, error } = (await supabase
       .from('tags')
-      .insert({
-        ...tag,
-        user_id: user.id,
-      } as any)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase型推論の問題を回避
+      .insert(tagData as any)
       .select()
-      .single()) as { data: Tag | null; error: any }
+      .single()) as { data: Tag | null; error: PostgrestError | null }
 
     if (error) {
       throw error
@@ -59,8 +62,8 @@ export function useTags() {
   const updateTag = async (id: string, updates: Omit<TagUpdate, 'user_id'>) => {
     const query = supabase.from('tags')
     // @ts-expect-error - Supabase type inference issue with update
-    const result: any = await query.update(updates as any).eq('id', id).select().single()
-    const { data, error } = result as { data: Tag | null; error: any }
+    const result = await query.update(updates as TagUpdate).eq('id', id).select().single()
+    const { data, error } = result as { data: Tag | null; error: PostgrestError | null }
 
     if (error) {
       throw error

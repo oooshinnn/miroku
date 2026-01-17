@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import useSWR from 'swr'
+import type { PostgrestError } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/client'
 import type { Movie, MovieWithExtras } from '@/types/movie'
 import type { WatchScore } from '@/types/watch-log'
@@ -37,7 +38,7 @@ const fetchAllMoviesWithExtras = async (): Promise<MovieWithExtras[]> => {
   const { data: allMovies, error } = await supabase
     .from('movies')
     .select('*')
-    .order('created_at', { ascending: false }) as { data: Movie[] | null; error: any }
+    .order('created_at', { ascending: false }) as { data: Movie[] | null; error: PostgrestError | null }
 
   if (error || !allMovies) {
     throw error || new Error('Failed to fetch movies')
@@ -58,9 +59,13 @@ const fetchAllMoviesWithExtras = async (): Promise<MovieWithExtras[]> => {
     .in('movie_id', movieIds)
 
   // 映画ごとのタグをマップ化
+  interface MovieTagRow {
+    movie_id: string
+    tag: { id: string; name: string; color: string | null } | null
+  }
   const movieTagsMap = new Map<string, { id: string; name: string; color: string | null }[]>()
   if (movieTagsData) {
-    for (const mt of movieTagsData as any[]) {
+    for (const mt of movieTagsData as MovieTagRow[]) {
       if (mt.tag) {
         const tags = movieTagsMap.get(mt.movie_id) || []
         tags.push(mt.tag)
@@ -77,10 +82,15 @@ const fetchAllMoviesWithExtras = async (): Promise<MovieWithExtras[]> => {
     .order('watched_at', { ascending: false })
 
   // 映画ごとの最高評価と最新視聴日をマップ化
+  interface WatchLogRow {
+    movie_id: string
+    score: WatchScore | null
+    watched_at: string
+  }
   const bestScoreMap = new Map<string, WatchScore>()
   const latestWatchedMap = new Map<string, string>()
   if (watchLogsData) {
-    for (const log of watchLogsData as any[]) {
+    for (const log of watchLogsData as WatchLogRow[]) {
       // 最新視聴日（最初に見つかったものが最新）
       if (!latestWatchedMap.has(log.movie_id)) {
         latestWatchedMap.set(log.movie_id, log.watched_at)
@@ -88,8 +98,8 @@ const fetchAllMoviesWithExtras = async (): Promise<MovieWithExtras[]> => {
       // 最高評価（数値の大きい方が良い評価）
       if (log.score) {
         const currentBest = bestScoreMap.get(log.movie_id)
-        if (!currentBest || (log.score as number) > currentBest) {
-          bestScoreMap.set(log.movie_id, log.score as WatchScore)
+        if (!currentBest || log.score > currentBest) {
+          bestScoreMap.set(log.movie_id, log.score)
         }
       }
     }
@@ -102,9 +112,13 @@ const fetchAllMoviesWithExtras = async (): Promise<MovieWithExtras[]> => {
     .in('movie_id', movieIds)
 
   // 映画ごとの人物IDをマップ化
+  interface MoviePersonRow {
+    movie_id: string
+    person_id: string
+  }
   const moviePersonsMap = new Map<string, Set<string>>()
   if (moviePersonsData) {
-    for (const mp of moviePersonsData as any[]) {
+    for (const mp of moviePersonsData as MoviePersonRow[]) {
       const personIds = moviePersonsMap.get(mp.movie_id) || new Set()
       personIds.add(mp.person_id)
       moviePersonsMap.set(mp.movie_id, personIds)
@@ -137,7 +151,7 @@ export function useMovieFilter() {
 
   // クライアント側でフィルタリング・ソート
   const movies = useMemo(() => {
-    let result = [...allMovies] as any[]
+    let result: MovieWithExtras[] = [...allMovies]
 
     // Title filter
     if (filters.title.trim()) {
@@ -169,15 +183,16 @@ export function useMovieFilter() {
     // Tag filter
     if (filters.tagIds.length > 0) {
       result = result.filter(m => {
-        const movieTagIds = (m.tags || []).map((t: any) => t.id)
+        const movieTagIds = (m.tags || []).map((t: { id: string }) => t.id)
         return filters.tagIds.some(tagId => movieTagIds.includes(tagId))
       })
     }
 
     // Person filter
     if (filters.personId) {
+      const personId = filters.personId
       result = result.filter(m => {
-        return m.personIds?.has(filters.personId)
+        return m.personIds?.has(personId)
       })
     }
 
@@ -203,7 +218,7 @@ export function useMovieFilter() {
     }
     // 'created_at' は既にソート済み
 
-    return result as MovieWithExtras[]
+    return result
   }, [allMovies, filters])
 
   const updateFilters = (newFilters: Partial<MovieFilters>) => {

@@ -42,8 +42,9 @@ export function ProfileForm({ initialEmail, initialDisplayName }: ProfileFormPro
       if (error) throw error
 
       setProfileMessage({ type: 'success', text: '表示名を更新しました' })
-    } catch (error: any) {
-      setProfileMessage({ type: 'error', text: error.message || '更新に失敗しました' })
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : '更新に失敗しました'
+      setProfileMessage({ type: 'error', text: message })
     } finally {
       setProfileLoading(false)
     }
@@ -69,8 +70,9 @@ export function ProfileForm({ initialEmail, initialDisplayName }: ProfileFormPro
         type: 'success',
         text: '確認メールを送信しました。メール内のリンクをクリックして変更を完了してください',
       })
-    } catch (error: any) {
-      setEmailMessage({ type: 'error', text: error.message || '更新に失敗しました' })
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : '更新に失敗しました'
+      setEmailMessage({ type: 'error', text: message })
     } finally {
       setEmailLoading(false)
     }
@@ -102,8 +104,9 @@ export function ProfileForm({ initialEmail, initialDisplayName }: ProfileFormPro
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
-    } catch (error: any) {
-      setPasswordMessage({ type: 'error', text: error.message || '更新に失敗しました' })
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : '更新に失敗しました'
+      setPasswordMessage({ type: 'error', text: message })
     } finally {
       setPasswordLoading(false)
     }

@@ -8,6 +8,14 @@ import { Progress } from '@/components/ui/progress'
 import { RefreshCw } from 'lucide-react'
 import type { Movie, Person, PersonInsert } from '@/types/movie'
 import type { TMDBMovieDetails, TMDBCredits } from '@/lib/tmdb/types'
+import type { PostgrestError } from '@supabase/supabase-js'
+
+interface MoviePersonInsert {
+  movie_id: string
+  person_id: string
+  role: string
+  cast_order?: number
+}
 
 interface RefreshProgress {
   current: number
@@ -108,11 +116,13 @@ export function BulkMovieRefresh() {
           for (const director of allDirectors) {
             const personId = await findOrCreatePerson(user.id, director.id, director.name)
             if (personId) {
-              await supabase.from('movie_persons').insert({
+              const insertData: MoviePersonInsert = {
                 movie_id: movie.id,
                 person_id: personId,
                 role: 'director',
-              } as any)
+              }
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              await supabase.from('movie_persons').insert(insertData as any)
             }
           }
 
@@ -120,11 +130,13 @@ export function BulkMovieRefresh() {
           for (const writer of allWriters) {
             const personId = await findOrCreatePerson(user.id, writer.id, writer.name)
             if (personId) {
-              await supabase.from('movie_persons').insert({
+              const insertData: MoviePersonInsert = {
                 movie_id: movie.id,
                 person_id: personId,
                 role: 'writer',
-              } as any)
+              }
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              await supabase.from('movie_persons').insert(insertData as any)
             }
           }
 
@@ -132,12 +144,14 @@ export function BulkMovieRefresh() {
           for (const castMember of allCast) {
             const personId = await findOrCreatePerson(user.id, castMember.id, castMember.name)
             if (personId) {
-              await supabase.from('movie_persons').insert({
+              const insertData: MoviePersonInsert = {
                 movie_id: movie.id,
                 person_id: personId,
                 role: 'cast',
                 cast_order: castMember.order,
-              } as any)
+              }
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              await supabase.from('movie_persons').insert(insertData as any)
             }
           }
 
@@ -191,9 +205,10 @@ export function BulkMovieRefresh() {
 
     const { data: newPerson, error } = await supabase
       .from('persons')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .insert(personData as any)
       .select()
-      .single() as { data: Person | null; error: unknown }
+      .single() as { data: Person | null; error: PostgrestError | null }
 
     if (error || !newPerson) {
       return null

@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/select'
 import { StarRating } from '@/components/ui/star-rating'
 import { WATCH_METHOD_LABELS } from '@/types/watch-log'
-import type { WatchScore } from '@/types/watch-log'
+import type { WatchScore, WatchMethod } from '@/types/watch-log'
 
 interface InlineWatchLogFormProps {
   movieId: string
@@ -58,9 +58,14 @@ export function InlineWatchLogForm({
     setSubmitError(null)
     try {
       await onSubmit(data)
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Submit error:', error)
-      setSubmitError(error?.message || error?.details || JSON.stringify(error))
+      const errorMessage = error instanceof Error
+        ? error.message
+        : typeof error === 'object' && error !== null && 'details' in error
+          ? String((error as { details: unknown }).details)
+          : JSON.stringify(error)
+      setSubmitError(errorMessage)
     }
   }
 
@@ -103,7 +108,7 @@ export function InlineWatchLogForm({
           <Label htmlFor="watch_method" className="text-sm">視聴方法</Label>
           <Select
             value={watchMethod}
-            onValueChange={(value) => setValue('watch_method', value as any)}
+            onValueChange={(value) => setValue('watch_method', value as WatchMethod)}
             disabled={isSubmitting}
           >
             <SelectTrigger className="h-9">
